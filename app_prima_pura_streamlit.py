@@ -19,7 +19,7 @@ CAT_COLS = ['año_cursado', 'estudios_area', '2_o_mas_inquilinos',
             'en_campus', 'genero', 'extintor_incendios']
 NUM_COLS = ['calif_promedio', 'distancia_al_campus']
 
-MODEL_PATH = "/content/drive/Shareddrives/CAS_2025/Aplicativo/modelos_hurdle_tweedie.pkl"
+MODEL_PATH = "modelos_hurdle_tweedie.pkl"
 
 # ==============================
 # FUNCIONES AUXILIARES
