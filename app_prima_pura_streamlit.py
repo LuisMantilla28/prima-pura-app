@@ -184,12 +184,12 @@ with col1:
     anio = st.selectbox("Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "5to año"], index=3)
     area = st.selectbox("Área de estudios", ["Ingenierías", "Humanidades", "Ciencias", "Economía", "Artes", "Salud"], index=1)
     genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro"], index=0)
-    calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01)
+    calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01,format="%.4f" )
 with col2:
     dos_mas = st.selectbox("¿2 o más inquilinos?", ["No", "Sí"], index=0)
     en_campus = st.selectbox("¿Vive en campus?", ["No", "Sí"], index=0)
     extintor = st.selectbox("¿Tiene extintor?", ["No", "Sí"], index=1)
-    dist_campus = st.number_input("Distancia al campus (km)", min_value=0.0, value=1.111582, step=0.00000001)
+    dist_campus = st.number_input("Distancia al campus (km)", min_value=0.0, value=1.111582, step=0.00000001,format="%.8f" )
 
 if st.button("Calcular prima"):
     nuevo = pd.DataFrame({
