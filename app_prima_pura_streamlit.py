@@ -182,7 +182,7 @@ st.write("### Ingrese los datos del estudiante:")
 col1, col2 = st.columns(2)
 with col1:
     anio = st.selectbox("Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
-    area = st.selectbox("Área de estudios", ["Ingenierías", "Humanidades", "Ciencias", "Economía", "Artes", "Salud"], index=1)
+    area = st.selectbox("Área de estudios", ["Administracion", "Humanidades", "Ciencias", "otros"], index=1)
     calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01,format="%.2f" )
     dos_mas = st.selectbox("¿2 o más inquilinos?", ["No", "Sí"], index=0)
 with col2:
