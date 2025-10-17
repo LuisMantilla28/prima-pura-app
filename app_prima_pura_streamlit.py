@@ -353,4 +353,3 @@ st.markdown("""
         <span style="font-size:12px;">© 2025 Grupo Riskbusters - Universidad Nacional de Colombia</span>
     </div>
 """, unsafe_allow_html=True)
-
