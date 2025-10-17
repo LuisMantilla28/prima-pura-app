@@ -239,8 +239,8 @@ st.markdown("""
 # ==== CABECERA ====
 st.markdown("""
     <div class="banner">
-        <h1>🔢 Estimador de Prima Pura</h1>
-        <p>Modelo Actuarial Hurdle + Tweedie • Proyecto de Estimación Individual</p>
+        <h1>🔢 Sigma Seguros </h1>
+        <p>Póliza para Dormitorios</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -349,8 +349,8 @@ with st.expander("🔧 Información técnica"):
 # ==== PIE DE PÁGINA ====
 st.markdown("""
     <div class="footer">
-        Desarrollado con ❤️ en Streamlit · Modelo actuarial de prima pura Hurdle + Tweedie <br>
-        <span style="font-size:12px;">© 2025 Proyecto académico - Universidad Nacional de Colombia</span>
+        Desarrollado en Streamlit · Modelo actuarial de prima pura <br>
+        <span style="font-size:12px;">© 2025 Grupo Riskbusters - Universidad Nacional de Colombia</span>
     </div>
 """, unsafe_allow_html=True)
 
