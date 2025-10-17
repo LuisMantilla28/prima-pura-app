@@ -173,63 +173,37 @@ st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
 # ==== ENCABEZADO EMPRESARIAL ====
 st.markdown("""
 <style>
-/* ======= Encabezado ======= */
 .header {
-    background: linear-gradient(90deg, #0052A2, #0078D7);
-    color: white;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #003366;
     text-align: center;
     padding: 1.2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    margin-bottom: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 .header h1 {
     font-size: 1.6rem;
+    font-weight: 700;
     margin: 0;
-    font-weight: 600;
 }
 .header p {
     font-size: 0.9rem;
-    margin-top: 4px;
-    color: #E0ECF8;
-}
-
-/* ======= Pie de página ======= */
-.footer {
-    background-color: #f2f2f2;
-    color: #333;
-    font-size: 0.85rem;
-    text-align: center;
-    padding: 0.8rem;
-    border-radius: 8px;
-    margin-top: 40px;
-    border-top: 2px solid #0078D7;
-}
-.footer a {
-    color: #0078D7;
-    text-decoration: none;
-    font-weight: 600;
-}
-.footer a:hover {
-    text-decoration: underline;
-}
-
-/* ======= Ajustes móviles ======= */
-@media (max-width: 600px) {
-    .header h1 { font-size: 1.3rem; }
-    .header p { font-size: 0.8rem; }
-    .footer { font-size: 0.8rem; padding: 0.6rem; }
+    color: #003366b3;
+    margin-top: 5px;
 }
 </style>
 
 <div class="header">
-    <h1>💼 Estimador de Prima Pura</h1>
+    <h1>Póliza Dormitorios</h1>
     <p>Modelo Actuarial – Hurdle + Tweedie</p>
 </div>
 """, unsafe_allow_html=True)
 
+
 # ==== TÍTULO DE SECCIÓN ====
-st.write("### 🔢 Ingrese los datos del estudiante:")
+st.write("###👤Ingrese los datos del estudiante:")
 
 # ==== CARGA DE MODELOS ====
 try:
