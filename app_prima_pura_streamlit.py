@@ -370,7 +370,7 @@ with st.expander("🔧 Información técnica"):
 # ==== PIE DE PÁGINA ====
 st.markdown("""
 <div class="footer">
-    Desarrollado en Streamlit · Modelo actuarial de prima pura <br>
+    Desarrollado en Streamlit. Modelo actuarial de prima pura <br>
     <span style="font-size:12px;">© 2025 Grupo Riskbusters - Universidad Nacional de Colombia</span>
 </div>
 """, unsafe_allow_html=True)
