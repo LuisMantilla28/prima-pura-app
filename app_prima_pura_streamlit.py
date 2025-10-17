@@ -301,6 +301,7 @@ if st.button("🔢 Calcular prima pura"):
             preprocess, modelos_freq, modelos_sev
         )
         st.success("✅ Predicción realizada con éxito")
+        
 
         # ==== TABLA (Plotly con nombres personalizados y orden correcto) ====
         st.markdown("### 💵 Prima por cobertura (USD):")
@@ -333,11 +334,26 @@ if st.button("🔢 Calcular prima pura"):
         )])
         
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=180)
+        
+        # ==== TÍTULO GRANDE PARA LA TABLA ====
+        st.markdown("""
+        <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; margin-bottom:0.3rem;'>
+        💵 Prima por cobertura (USD)
+        </h2>
+        """, unsafe_allow_html=True)
+
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
         # ==== MÉTRICA PRINCIPAL ====
-        st.metric("💰 Prima pura total (USD)", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
+
+        st.markdown("""
+        <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; margin-top:1rem; margin-bottom:0.3rem;'>
+        💰 Prima pura total (USD)
+        </h2>
+        """, unsafe_allow_html=True)
+
+        st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
         # ==== DESCARGA ====
         st.download_button(
