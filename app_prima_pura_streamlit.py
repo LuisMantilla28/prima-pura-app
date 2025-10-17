@@ -183,14 +183,28 @@ col1, col2 = st.columns(2)
 with col1:
     anio = st.selectbox("Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
     area = st.selectbox("Área de estudios", ["Administracion", "Humanidades", "Ciencias", "Otro"], index=1)
-    calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01,format="%.2f" )
+    calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01, format="%.2f")
     dos_mas = st.selectbox("¿2 o más inquilinos?", ["No", "Sí"], index=0)
+
 with col2:
     en_campus = st.selectbox("¿Vive fuera del campus?", ["No", "Sí"], index=1)
-    dist_campus = st.number_input("Distancia al campus (km)", min_value=0.0, value=1.111582, step=0.000001,format="%.6f" )
+    # Si responde "No", se bloquea y pone en 0.0
+    if en_campus == "No":
+        dist_campus = st.number_input(
+            "Distancia al campus (km)",
+            min_value=0.0, max_value=0.0, value=0.0,
+            step=0.0, format="%.6f",
+            disabled=True
+        )
+    else:
+        dist_campus = st.number_input(
+            "Distancia al campus (km)",
+            min_value=0.0, value=1.111582, step=0.000001, format="%.6f"
+        )
+
     genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro"], index=0)
     extintor = st.selectbox("¿Tiene extintor?", ["No", "Sí"], index=1)
-    
+
 if st.button("Calcular prima"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
@@ -233,3 +247,4 @@ with st.expander("🔧 Información técnica"):
         "pandas": pandas.__version__,
         "joblib": jb.__version__
     })
+
