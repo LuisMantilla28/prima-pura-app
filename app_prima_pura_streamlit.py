@@ -162,7 +162,7 @@ def load_model_objects():
     return objetos
 
 # ==========================================
-# STREAMLIT UI
+# STREAMLIT UI - Versión final completa (sin theme en set_page_config)
 # ==========================================
 import streamlit as st
 import pandas as pd
@@ -172,13 +172,7 @@ st.set_page_config(
     page_title="Estimador de Prima Pura",
     page_icon="💼",
     layout="wide",
-    initial_sidebar_state="collapsed",
-    theme={
-        "primaryColor": "#005B96",
-        "backgroundColor": "#f4f6f9",
-        "secondaryBackgroundColor": "#ffffff",
-        "textColor": "#1a1a1a"
-    }
+    initial_sidebar_state="collapsed"  # evita menú lateral en móvil
 )
 
 # ==== CSS GLOBAL (COLORES Y RESPONSIVE) ====
@@ -222,7 +216,7 @@ label, .stSelectbox label, .stNumberInput label {
     color: #003C6E !important;
     font-weight: 500 !important;
 }
-/* Opciones desplegadas del menú */
+/* Opciones desplegadas del menú (asegura visibilidad en móvil) */
 div[role="listbox"] > div > div {
     color: #002B5B !important;
     background-color: #ffffff !important;
@@ -370,7 +364,8 @@ with st.expander("🔧 Información técnica"):
 # ==== PIE DE PÁGINA ====
 st.markdown("""
 <div class="footer">
-    Desarrollado en Streamlit. Modelo actuarial de prima pura <br>
+    Desarrollado en Streamlit · Modelo actuarial de prima pura <br>
     <span style="font-size:12px;">© 2025 Grupo Riskbusters - Universidad Nacional de Colombia</span>
 </div>
 """, unsafe_allow_html=True)
+
