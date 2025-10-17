@@ -302,37 +302,39 @@ if st.button("🔢 Calcular prima pura"):
         )
         st.success("✅ Predicción realizada con éxito")
 
-        # ==== TABLA (Plotly con nombres personalizados) ====
+        # ==== TABLA (Plotly con nombres personalizados y orden correcto) ====
         st.markdown("### 💵 Prima por cobertura (USD):")
-
-        nombres_nuevos = [
-            "💼 Gastos Adicionales",
-            "🩺 Gastos Médicos RC",
-            "⚖️ Responsabilidad Civil",
-            "🏠 Contenidos"
-        ]
-
+        
+        TITULOS = {
+            "Gastos_Adicionales": "💼 Gastos Adicionales",
+            "Contenidos": "🏠 Contenidos",
+            "Resp_Civil": "⚖️ Responsabilidad Civil",
+            "Gastos_Medicos_RC": "🩺 Gastos Médicos RC",
+        }
+        
+        # Encabezados en el mismo orden de COBERTURAS
+        headers = [f"<b>{TITULOS.get(c, c)}</b>" for c in COBERTURAS]
+        # Valores en el mismo orden de COBERTURAS
+        cells = [df_pred[c].round(4) for c in COBERTURAS]
+        
         fig = go.Figure(data=[go.Table(
             header=dict(
-                values=[f"<b>{t}</b>" for t in nombres_nuevos],
+                values=headers,
                 fill_color="#0055A4",
                 align="center",
                 font=dict(color="white", size=13)
             ),
             cells=dict(
-                values=[df_pred[c].round(4) for c in COBERTURAS],
+                values=cells,
                 fill_color="#F8FAFF",
                 align="center",
                 font=dict(color="#002D62", size=12)
             )
         )])
-
-        fig.update_layout(
-            margin=dict(l=0, r=0, t=0, b=0),
-            height=180
-        )
-
+        
+        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=180)
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
 
         # ==== MÉTRICA PRINCIPAL ====
         st.metric("💰 Prima pura total (USD)", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
