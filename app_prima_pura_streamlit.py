@@ -307,9 +307,9 @@ if st.button("🔢 Calcular prima pura"):
 
         nombres_nuevos = [
             "💼 Gastos Adicionales",
-            "🏠 Contenidos",
+            "🩺 Gastos Médicos RC",
             "⚖️ Responsabilidad Civil",
-            "🩺 Gastos Médicos RC"
+            "🏠 Contenidos"
         ]
 
         fig = go.Figure(data=[go.Table(
