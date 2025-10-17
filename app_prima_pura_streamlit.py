@@ -164,48 +164,101 @@ def load_model_objects():
 # ==========================================
 # STREAMLIT UI
 # ==========================================
-st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
-st.title("🔢 Estimación de Prima Pura (Hurdle + Tweedie)")
+import streamlit as st
+import pandas as pd
+from datetime import datetime
 
-# Cargar modelo / preprocess
+st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
+
+# ==== ENCABEZADO EMPRESARIAL ====
+st.markdown("""
+<style>
+/* ======= Encabezado ======= */
+.header {
+    background: linear-gradient(90deg, #0052A2, #0078D7);
+    color: white;
+    text-align: center;
+    padding: 1.2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+}
+.header h1 {
+    font-size: 1.6rem;
+    margin: 0;
+    font-weight: 600;
+}
+.header p {
+    font-size: 0.9rem;
+    margin-top: 4px;
+    color: #E0ECF8;
+}
+
+/* ======= Pie de página ======= */
+.footer {
+    background-color: #f2f2f2;
+    color: #333;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-top: 40px;
+    border-top: 2px solid #0078D7;
+}
+.footer a {
+    color: #0078D7;
+    text-decoration: none;
+    font-weight: 600;
+}
+.footer a:hover {
+    text-decoration: underline;
+}
+
+/* ======= Ajustes móviles ======= */
+@media (max-width: 600px) {
+    .header h1 { font-size: 1.3rem; }
+    .header p { font-size: 0.8rem; }
+    .footer { font-size: 0.8rem; padding: 0.6rem; }
+}
+</style>
+
+<div class="header">
+    <h1>💼 Estimador de Prima Pura</h1>
+    <p>Modelo Actuarial – Hurdle + Tweedie</p>
+</div>
+""", unsafe_allow_html=True)
+
+# ==== TÍTULO DE SECCIÓN ====
+st.write("### 🔢 Ingrese los datos del estudiante:")
+
+# ==== CARGA DE MODELOS ====
 try:
     objetos = load_model_objects()
     preprocess = objetos["preprocess"]
     modelos_freq = objetos["modelos_freq"]
-    modelos_sev  = objetos["modelos_sev"]
+    modelos_sev = objetos["modelos_sev"]
 except Exception as e:
     st.error(f"No se pudo cargar el modelo: {e}")
     st.stop()
 
-st.write("### Ingrese los datos del estudiante:")
-
+# ==== FORMULARIO ====
 col1, col2 = st.columns(2)
 with col1:
-    anio = st.selectbox("Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
-    area = st.selectbox("Área de estudios", ["Administracion", "Humanidades", "Ciencias", "Otro"], index=1)
-    calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01, format="%.2f")
-    dos_mas = st.selectbox("¿2 o más inquilinos?", ["No", "Sí"], index=0)
-
+    anio = st.selectbox("🎓 Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
+    area = st.selectbox("🏫 Área de estudios", ["Administracion", "Humanidades", "Ciencias", "Otro"], index=1)
+    calif_prom = st.number_input("📊 Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01, format="%.2f")
+    dos_mas = st.selectbox("👥 ¿2 o más inquilinos?", ["No", "Sí"], index=0)
 with col2:
-    en_campus = st.selectbox("¿Vive fuera del campus?", ["No", "Sí"], index=1)
-    # Si responde "No", se bloquea y pone en 0.0
+    en_campus = st.selectbox("🏠 ¿Vive fuera del campus?", ["No", "Sí"], index=1)
     if en_campus == "No":
-        dist_campus = st.number_input(
-            "Distancia al campus (km)",
-            min_value=0.0, max_value=0.0, value=0.0,
-            step=0.0, format="%.6f",
-            disabled=True
-        )
+        dist_campus = st.number_input("📏 Distancia al campus (km)", min_value=0.0, max_value=0.0, value=0.0, step=0.0, format="%.6f", disabled=True)
     else:
-        dist_campus = st.number_input(
-            "Distancia al campus (km)",
-            min_value=0.0, value=1.111582, step=0.000001, format="%.6f"
-        )
+        dist_campus = st.number_input("📏 Distancia al campus (km)", min_value=0.0, value=1.111582, step=0.000001, format="%.6f")
+    genero = st.selectbox("⚧️ Género", ["Masculino", "Femenino", "Otro","No respuesta"], index=0)
+    extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
 
-    genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro"], index=0)
-    extintor = st.selectbox("¿Tiene extintor?", ["No", "Sí"], index=1)
-
-if st.button("Calcular prima"):
+# ==== BOTÓN DE CÁLCULO ====
+if st.button("🚀 Calcular prima"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
         'estudios_area': [area],
@@ -216,15 +269,15 @@ if st.button("Calcular prima"):
         'calif_promedio': [calif_prom],
         'distancia_al_campus': [dist_campus]
     })
-
     try:
         df_pred = predecir_prima_pura_total(
-            nuevo, NUM_COLS, CAT_COLS, COBERTURAS, preprocess, modelos_freq, modelos_sev
+            nuevo, NUM_COLS, CAT_COLS, COBERTURAS,
+            preprocess, modelos_freq, modelos_sev
         )
-        st.success("Predicción realizada con éxito ✅")
+        st.success("✅ Predicción realizada con éxito")
         st.write("**Prima por cobertura:**")
         st.dataframe(df_pred[COBERTURAS].round(4))
-        st.metric("Prima pura total", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
+        st.metric("💰 Prima pura total", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
         # Botón de descarga
         st.download_button(
@@ -237,7 +290,7 @@ if st.button("Calcular prima"):
         st.error(f"Error al predecir: {e}")
         st.stop()
 
-# Info de entorno (útil para depurar versiones)
+# ==== INFO TÉCNICA ====
 with st.expander("🔧 Información técnica"):
     import sklearn, numpy, scipy, pandas, joblib as jb
     st.write({
@@ -247,5 +300,12 @@ with st.expander("🔧 Información técnica"):
         "pandas": pandas.__version__,
         "joblib": jb.__version__
     })
+
+# ==== PIE DE PÁGINA ====
+st.markdown(f"""
+<div class="footer">
+    © {datetime.now().year} Grupo Riskbusters - Universidad Nacional de Colombia · Desarrollado por <a href="https://streamlit.io" target="_blank">Streamlit</a> 💡
+</div>
+""", unsafe_allow_html=True)
 
 
