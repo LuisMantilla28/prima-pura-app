@@ -167,13 +167,11 @@ def load_model_objects():
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+import plotly.graph_objects as go
 
 st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
 
 # ==== ENCABEZADO ====
-# ==========================================
-# ENCABEZADO MODERNO AZUL CORPORATIVO
-# ==========================================
 st.markdown("""
 <style>
 /* ======= Encabezado ======= */
@@ -192,8 +190,8 @@ st.markdown("""
     margin: 0;
 }
 .header p {
-    font-size: 1.3rem;             /* más grande */
-    color: white;                  /* mismo color que el título */
+    font-size: 1.3rem;
+    color: white;
     margin-top: 8px;
     font-weight: 600;
 }
@@ -207,7 +205,7 @@ st.markdown("""
     border-radius: 5px;
 }
 
-/* ======= Botón "Calcular Prima" ======= */
+/* ======= Botón ======= */
 div.stButton > button:first-child {
     background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
     color: white;
@@ -224,6 +222,26 @@ div.stButton > button:hover {
     box-shadow: 0 5px 15px rgba(0,0,0,0.25);
 }
 
+/* ======= Footer ======= */
+.footer {
+    background-color: #f2f2f2;
+    color: #333;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-top: 40px;
+    border-top: 2px solid #0078D7;
+}
+.footer a {
+    color: #0078D7;
+    text-decoration: none;
+    font-weight: 600;
+}
+.footer a:hover {
+    text-decoration: underline;
+}
+
 /* ======= Responsivo ======= */
 @media (max-width: 600px) {
     .header h1 { font-size: 1.5rem; }
@@ -232,15 +250,14 @@ div.stButton > button:hover {
 </style>
 
 <div class="header">
-    <h1>Póliza Dormitorios</h1>
+    <h1>👤 Póliza Dormitorios</h1>
     <p><strong>Seguros Sigma</strong></p>
 </div>
 """, unsafe_allow_html=True)
 
-# ==== TÍTULO DE SECCIÓN ====
+# ==== FORMULARIO ====
 st.write("👤 Ingrese los datos del estudiante:")
 
-# ==== CARGA DE MODELOS ====
 try:
     objetos = load_model_objects()
     preprocess = objetos["preprocess"]
@@ -250,7 +267,6 @@ except Exception as e:
     st.error(f"No se pudo cargar el modelo: {e}")
     st.stop()
 
-# ==== FORMULARIO ====
 col1, col2 = st.columns(2)
 with col1:
     anio = st.selectbox("🎓 Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
@@ -263,11 +279,10 @@ with col2:
         dist_campus = st.number_input("📏 Distancia al campus (km)", min_value=0.0, max_value=0.0, value=0.0, step=0.0, format="%.6f", disabled=True)
     else:
         dist_campus = st.number_input("📏 Distancia al campus (km)", min_value=0.0, value=1.111582, step=0.000001, format="%.6f")
-    genero = st.selectbox("⚧️ Género", ["Masculino", "Femenino", "Otro","No respuesta"], index=0)
+    genero = st.selectbox("⚧️ Género", ["Masculino", "Femenino", "Otro", "No respuesta"], index=0)
     extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
 
 # ==== BOTÓN DE CÁLCULO ====
-
 if st.button("🔢 Calcular prima pura"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
@@ -279,23 +294,49 @@ if st.button("🔢 Calcular prima pura"):
         'calif_promedio': [calif_prom],
         'distancia_al_campus': [dist_campus]
     })
+
     try:
         df_pred = predecir_prima_pura_total(
             nuevo, NUM_COLS, CAT_COLS, COBERTURAS,
             preprocess, modelos_freq, modelos_sev
         )
         st.success("✅ Predicción realizada con éxito")
-        st.write("**Prima por cobertura:**")
-        st.dataframe(df_pred[COBERTURAS].round(4))
-        st.metric("💰 Prima pura total", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
-        # Botón de descarga
+        # ==== TABLA (Plotly) ====
+        st.markdown("### 💵 Prima por cobertura (USD):")
+
+        fig = go.Figure(data=[go.Table(
+            header=dict(
+                values=[f"<b>{c}</b>" for c in COBERTURAS],
+                fill_color="#0055A4",
+                align="center",
+                font=dict(color="white", size=13)
+            ),
+            cells=dict(
+                values=[df_pred[c].round(4) for c in COBERTURAS],
+                fill_color="#F8FAFF",
+                align="center",
+                font=dict(color="#002D62", size=12)
+            )
+        )])
+
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=20, b=0),
+            height=250
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        # ==== MÉTRICA PRINCIPAL ====
+        st.metric("💰 Prima pura total (USD)", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
+
+        # ==== DESCARGA ====
         st.download_button(
             "⬇️ Descargar CSV",
             data=df_pred.to_csv(index=False).encode("utf-8"),
             file_name="prediccion_individual.csv",
             mime="text/csv"
         )
+
     except Exception as e:
         st.error(f"Error al predecir: {e}")
         st.stop()
@@ -314,7 +355,8 @@ with st.expander("🔧 Información técnica"):
 # ==== PIE DE PÁGINA ====
 st.markdown(f"""
 <div class="footer">
-    © {datetime.now().year} Equipo Riskbusters - Universidad Nacional de Colombia · Desarrollado con <a href="https://streamlit.io" target="_blank">Streamlit</a> 💡
+    © {datetime.now().year} Desarrollado con 
+    <a href="https://streamlit.io" target="_blank">Streamlit</a> ·💡Equipo Riskbusters - Universidad Nacional de Colombia
 </div>
 """, unsafe_allow_html=True)
 
