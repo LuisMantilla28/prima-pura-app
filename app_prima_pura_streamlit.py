@@ -162,7 +162,7 @@ def load_model_objects():
     return objetos
 
 # ==========================================
-# STREAMLIT UI
+# STREAMLIT UI - Versión final ajustada
 # ==========================================
 import streamlit as st
 import pandas as pd
@@ -170,18 +170,20 @@ import pandas as pd
 st.set_page_config(
     page_title="Estimador de Prima Pura",
     page_icon="💼",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"  # evita menú lateral en móvil
 )
 
-# ==== CSS ADAPTATIVO ====
+# ==== CSS COMPLETO Y CORREGIDO ====
 st.markdown("""
 <style>
-/* Fondo general */
-.stApp {
-    background-color: #f4f6f9;
+/* ==================== PALETA GENERAL ==================== */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    background-color: #f4f6f9 !important;   /* fondo gris claro fijo */
+    color: #1a1a1a !important;              /* texto oscuro */
 }
 
-/* Banner adaptable */
+/* ==================== BANNER ==================== */
 .banner {
     background: linear-gradient(90deg, #002B5B 0%, #005B96 100%);
     color: white;
@@ -202,7 +204,25 @@ st.markdown("""
     margin-top: 0;
 }
 
-/* Botones y métricas */
+/* ==================== TEXTOS Y LABELS ==================== */
+label, .stSelectbox label, .stNumberInput label, .stTextInput label {
+    color: #002B5B !important;       /* azul corporativo */
+    font-weight: 600 !important;
+    font-size: 0.95em !important;
+}
+p, span, div, .stMarkdown {
+    color: #1a1a1a !important;
+}
+.stSelectbox, .stNumberInput, .stTextInput {
+    background-color: #ffffff !important;
+    border-radius: 6px !important;
+}
+.stSelectbox div[data-baseweb="select"] > div {
+    color: #002B5B !important;
+    font-weight: 500 !important;
+}
+
+/* ==================== BOTONES Y MÉTRICAS ==================== */
 div[data-testid="stMetricValue"] {
     color: #002B5B;
     font-weight: bold;
@@ -222,12 +242,12 @@ div[data-testid="stMetricValue"] {
     transform: scale(1.02);
 }
 
-/* DataFrame */
+/* ==================== DATAFRAME ==================== */
 .stDataFrame {
     overflow-x: auto !important;
 }
 
-/* Pie de página */
+/* ==================== PIE DE PÁGINA ==================== */
 .footer {
     text-align: center;
     font-size: 0.85em;
@@ -237,9 +257,9 @@ div[data-testid="stMetricValue"] {
     padding-top: 10px;
 }
 
-/* ===== Diseño fluido ===== */
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 900px) {
-    /* Columnas en una sola línea */
+    /* Columnas se apilan */
     [data-testid="stHorizontalBlock"] {
         flex-direction: column !important;
     }
@@ -281,7 +301,6 @@ except Exception as e:
 # ==== FORMULARIO ====
 st.subheader("🧾 Ingrese los datos del estudiante")
 
-# En móvil, las columnas se apilan automáticamente por CSS
 with st.expander("👤 Información general", expanded=True):
     col1, col2 = st.columns(2)
     with col1:
@@ -298,7 +317,7 @@ with st.expander("👤 Información general", expanded=True):
         else:
             dist_campus = st.number_input("Distancia al campus (km)", min_value=0.0, value=1.111582,
                                           step=0.000001, format="%.6f")
-        genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro","No respuesta"], index=0)
+        genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro", "No respuesta"], index=0)
         extintor = st.selectbox("¿Tiene extintor?", ["No", "Sí"], index=1)
 
 # ==== BOTÓN DE CÁLCULO ====
@@ -356,8 +375,7 @@ with st.expander("🔧 Información técnica"):
 # ==== PIE DE PÁGINA ====
 st.markdown("""
 <div class="footer">
-    Desarrollado en Streamlit. Modelo actuarial de prima pura <br>
+    Desarrollado en Streamlit · Modelo actuarial de prima pura <br>
     <span style="font-size:12px;">© 2025 Grupo Riskbusters - Universidad Nacional de Colombia</span>
 </div>
 """, unsafe_allow_html=True)
-
