@@ -173,6 +173,7 @@ st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
 # ==== ENCABEZADO ====
 st.markdown("""
 <style>
+/* ======= Encabezado ======= */
 .header {
     background: linear-gradient(90deg, #006D5B, #009879);
     color: white;
@@ -188,9 +189,10 @@ st.markdown("""
     margin: 0;
 }
 .header p {
-    font-size: 1rem;
-    color: #E0F2EF;
-    margin-top: 6px;
+    font-size: 1.3rem;             /* más grande */
+    color: white;                  /* mismo color que el título */
+    margin-top: 8px;
+    font-weight: 600;
 }
 .header::after {
     content: "";
@@ -201,6 +203,29 @@ st.markdown("""
     background: linear-gradient(90deg, #A7F3D0, #6EE7B7);
     border-radius: 5px;
 }
+
+/* ======= Botón de Calcular Prima ======= */
+div.stButton > button:first-child {
+    background: linear-gradient(90deg, #006D5B, #009879);
+    color: white;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+div.stButton > button:hover {
+    background: linear-gradient(90deg, #007F68, #00B88F);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.25);
+}
+
+/* ======= Responsivo ======= */
+@media (max-width: 600px) {
+    .header h1 { font-size: 1.5rem; }
+    .header p { font-size: 1.1rem; }
+}
 </style>
 
 <div class="header">
@@ -208,7 +233,6 @@ st.markdown("""
     <p><strong>Seguros Sigma</strong></p>
 </div>
 """, unsafe_allow_html=True)
-
 # ==== TÍTULO DE SECCIÓN ====
 st.write("👤 Ingrese los datos del estudiante:")
 
@@ -239,26 +263,6 @@ with col2:
     extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
 
 # ==== BOTÓN DE CÁLCULO ====
-# ==== ESTILO DEL BOTÓN ====
-st.markdown("""
-<style>
-div.stButton > button:first-child {
-    background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
-    color: white;
-    font-weight: 600;
-    border-radius: 10px;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-}
-div.stButton > button:hover {
-    background: linear-gradient(90deg, #003D82, #0065BF, #199BFF);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.25);
-}
-</style>
-""", unsafe_allow_html=True)
 
 if st.button("🔢 Calcular prima pura"):
     nuevo = pd.DataFrame({
