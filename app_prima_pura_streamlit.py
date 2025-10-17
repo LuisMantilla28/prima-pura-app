@@ -161,6 +161,7 @@ def load_model_objects():
     objetos = joblib.load(tmp_path)
     return objetos
 
+
 # ==========================================
 # STREAMLIT UI
 # ==========================================
@@ -242,6 +243,14 @@ div.stButton > button:hover {
     text-decoration: underline;
 }
 
+/* ======= Ajuste espacio tabla ======= */
+.block-container {
+    padding-bottom: 0rem !important;
+}
+[data-testid="stPlotlyChart"] {
+    margin-bottom: -40px !important;
+}
+
 /* ======= Responsivo ======= */
 @media (max-width: 600px) {
     .header h1 { font-size: 1.5rem; }
@@ -301,7 +310,7 @@ if st.button("🔢 Calcular prima pura"):
             preprocess, modelos_freq, modelos_sev
         )
         st.success("✅ Predicción realizada con éxito")
-        
+
         # ==== TABLA (Plotly con nombres personalizados y orden correcto) ====
         TITULOS = {
             "Gastos_Adicionales_siniestros_monto": "💼 Gastos Adicionales",
@@ -309,10 +318,9 @@ if st.button("🔢 Calcular prima pura"):
             "Resp_Civil_siniestros_monto": "⚖️ Responsabilidad Civil",
             "Gastos_Medicos_RC_siniestros_monto": "🩺 Gastos Médicos RC",
         }
-        
         headers = [f"<b>{TITULOS.get(c, c)}</b>" for c in COBERTURAS]
         cells = [df_pred[c].round(4) for c in COBERTURAS]
-        
+
         fig = go.Figure(data=[go.Table(
             header=dict(
                 values=headers,
@@ -327,21 +335,19 @@ if st.button("🔢 Calcular prima pura"):
                 font=dict(color="#002D62", size=12)
             )
         )])
-        
-        # ===== AJUSTE DEL ESPACIO DEBAJO DE LA TABLA =====
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=160)
+
+        # ==== TÍTULO GRANDE PARA LA TABLA ====
         st.markdown("""
         <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; margin-bottom:0.3rem;'>
         💵 Prima por cobertura (USD)
         </h2>
         """, unsafe_allow_html=True)
-        with st.container():
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-            st.markdown("<div style='margin-top:-30px;'></div>", unsafe_allow_html=True)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
         # ==== MÉTRICA PRINCIPAL ====
         st.markdown("""
-        <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; margin-top:1rem; margin-bottom:0.3rem;'>
+        <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; margin-top:0rem; margin-bottom:0.3rem;'>
         💰 Prima pura total (USD)
         </h2>
         """, unsafe_allow_html=True)
@@ -377,7 +383,6 @@ st.markdown(f"""
     <a href="https://streamlit.io" target="_blank">Streamlit</a> ·💡Equipo Riskbusters - Universidad Nacional de Colombia
 </div>
 """, unsafe_allow_html=True)
-
 
 
 
