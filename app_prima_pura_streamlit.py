@@ -306,10 +306,10 @@ if st.button("🔢 Calcular prima pura"):
         st.markdown("### 💵 Prima por cobertura (USD):")
         
         TITULOS = {
-            "Gastos_Adicionales": "💼 Gastos Adicionales",
-            "Contenidos": "🏠 Contenidos",
-            "Resp_Civil": "⚖️ Responsabilidad Civil",
-            "Gastos_Medicos_RC": "🩺 Gastos Médicos RC",
+            "Gastos_Adicionales_siniestros_monto": "💼 Gastos Adicionales",
+            "Contenidos_siniestros_monto": "🏠 Contenidos",
+            "Resp_Civil_siniestros_monto": "⚖️ Responsabilidad Civil",
+            "Gastos_Medicos_RC_siniestros_monto": "🩺 Gastos Médicos RC",
         }
         
         # Encabezados en el mismo orden de COBERTURAS
