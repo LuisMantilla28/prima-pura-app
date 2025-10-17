@@ -162,71 +162,76 @@ def load_model_objects():
     return objetos
 
 # ==========================================
-# STREAMLIT UI - Versión final ajustada
+# STREAMLIT UI
 # ==========================================
 import streamlit as st
 import pandas as pd
 
+# ==== CONFIGURACIÓN DE LA APP ====
 st.set_page_config(
     page_title="Estimador de Prima Pura",
     page_icon="💼",
     layout="wide",
-    initial_sidebar_state="collapsed"  # evita menú lateral en móvil
+    initial_sidebar_state="collapsed",
+    theme={
+        "primaryColor": "#005B96",
+        "backgroundColor": "#f4f6f9",
+        "secondaryBackgroundColor": "#ffffff",
+        "textColor": "#1a1a1a"
+    }
 )
 
-# ==== CSS COMPLETO Y CORREGIDO ====
+# ==== CSS GLOBAL (COLORES Y RESPONSIVE) ====
 st.markdown("""
 <style>
-/* ==================== PALETA GENERAL ==================== */
+/* ===== PALETA GENERAL Y FONDO ===== */
 html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-    background-color: #f4f6f9 !important;   /* fondo gris claro fijo */
-    color: #1a1a1a !important;              /* texto oscuro */
+    background-color: #f4f6f9 !important;
+    color: #1a1a1a !important;
 }
 
-/* ==================== BANNER ==================== */
+/* ===== BANNER ===== */
 .banner {
-    background: linear-gradient(90deg, #002B5B 0%, #005B96 100%);
-    color: white;
+    background: linear-gradient(90deg, #003C6E 0%, #006EB8 100%) !important;
+    color: #ffffff !important;
     padding: 3vw 2vw;
     border-radius: 12px;
     text-align: center;
     margin-bottom: 2vh;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.25);
 }
-.banner h1 {
-    font-size: clamp(1.5em, 4vw, 2.5em);
-    margin-bottom: 0.3em;
-    font-weight: 700;
+.banner h1, .banner p {
+    color: #ffffff !important;
+    text-shadow: 0px 1px 3px rgba(0,0,0,0.25);
 }
-.banner p {
-    font-size: clamp(0.9em, 1.8vw, 1.1em);
-    color: #e0e8f0;
-    margin-top: 0;
-}
+.banner h1 { font-size: clamp(1.6em, 4vw, 2.6em); font-weight: 700; }
+.banner p { font-size: clamp(1em, 1.8vw, 1.2em); }
 
-/* ==================== TEXTOS Y LABELS ==================== */
-label, .stSelectbox label, .stNumberInput label, .stTextInput label {
-    color: #002B5B !important;       /* azul corporativo */
+/* ===== LABELS E INPUTS ===== */
+label, .stSelectbox label, .stNumberInput label {
+    color: #003C6E !important;
     font-weight: 600 !important;
     font-size: 0.95em !important;
-}
-p, span, div, .stMarkdown {
-    color: #1a1a1a !important;
 }
 .stSelectbox, .stNumberInput, .stTextInput {
     background-color: #ffffff !important;
     border-radius: 6px !important;
 }
+/* Texto dentro del campo seleccionado */
 .stSelectbox div[data-baseweb="select"] > div {
-    color: #002B5B !important;
+    color: #003C6E !important;
     font-weight: 500 !important;
 }
-
-/* ==================== BOTONES Y MÉTRICAS ==================== */
-div[data-testid="stMetricValue"] {
-    color: #002B5B;
-    font-weight: bold;
+/* Opciones desplegadas del menú */
+div[role="listbox"] > div > div {
+    color: #002B5B !important;
+    background-color: #ffffff !important;
 }
+div[role="listbox"] > div:hover {
+    background-color: #E0F0FF !important;
+}
+
+/* ===== BOTONES ===== */
 .stButton>button {
     background-color: #005B96;
     color: white;
@@ -242,12 +247,14 @@ div[data-testid="stMetricValue"] {
     transform: scale(1.02);
 }
 
-/* ==================== DATAFRAME ==================== */
-.stDataFrame {
-    overflow-x: auto !important;
+/* ===== MÉTRICAS ===== */
+div[data-testid="stMetricValue"] {
+    color: #002B5B !important;
+    font-weight: bold;
 }
 
-/* ==================== PIE DE PÁGINA ==================== */
+/* ===== TABLAS Y FOOTER ===== */
+.stDataFrame { overflow-x: auto !important; }
 .footer {
     text-align: center;
     font-size: 0.85em;
@@ -257,25 +264,13 @@ div[data-testid="stMetricValue"] {
     padding-top: 10px;
 }
 
-/* ==================== RESPONSIVE ==================== */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
-    /* Columnas se apilan */
-    [data-testid="stHorizontalBlock"] {
-        flex-direction: column !important;
-    }
-    .stButton>button {
-        width: 100% !important;
-        margin-top: 10px;
-    }
-    h2, h3, label, p {
-        font-size: 0.95em !important;
-    }
-    .stDataFrame {
-        overflow-x: scroll !important;
-    }
-    .footer {
-        font-size: 0.8em !important;
-    }
+    [data-testid="stHorizontalBlock"] { flex-direction: column !important; }
+    .stButton>button { width: 100% !important; margin-top: 10px; }
+    h2, h3, label, p { font-size: 0.95em !important; }
+    .stDataFrame { overflow-x: scroll !important; }
+    .footer { font-size: 0.8em !important; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -361,7 +356,7 @@ if st.button("🚀 Calcular prima pura"):
         st.error(f"Error al predecir: {e}")
         st.stop()
 
-# ==== INFO TÉCNICA ====
+# ==== INFORMACIÓN TÉCNICA ====
 with st.expander("🔧 Información técnica"):
     import sklearn, numpy, scipy, pandas, joblib as jb
     st.write({
