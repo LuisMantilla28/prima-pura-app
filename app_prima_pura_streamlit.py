@@ -302,30 +302,41 @@ if st.button("🔢 Calcular prima pura"):
         )
         st.success("✅ Predicción realizada con éxito")
 
-        # ==== TABLA (Plotly) ====
-        st.markdown("### 💵 Prima por cobertura (USD):")
+# ==== TABLA (Plotly con nombres personalizados) ====
+st.markdown("### 💵 Prima por cobertura (USD):")
 
-        fig = go.Figure(data=[go.Table(
-            header=dict(
-                values=[f"<b>{c}</b>" for c in COBERTURAS],
-                fill_color="#0055A4",
-                align="center",
-                font=dict(color="white", size=13)
-            ),
-            cells=dict(
-                values=[df_pred[c].round(4) for c in COBERTURAS],
-                fill_color="#F8FAFF",
-                align="center",
-                font=dict(color="#002D62", size=12)
-            )
-        )])
+# Nombres de las columnas personalizadas
+nombres_nuevos = [
+    "💼 Gastos Adicionales",
+    "🏠 Contenidos",
+    "⚖️ Responsabilidad Civil",
+    "🩺 Gastos Médicos RC"
+]
 
-        fig.update_layout(
-            margin=dict(l=0, r=0, t=0, b=0),
-            height=180   # antes 250 o más
-        )
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+# Crear la tabla
+fig = go.Figure(data=[go.Table(
+    header=dict(
+        values=[f"<b>{t}</b>" for t in nombres_nuevos],
+        fill_color="#0055A4",
+        align="center",
+        font=dict(color="white", size=13)
+    ),
+    cells=dict(
+        values=[df_pred[c].round(4) for c in COBERTURAS],
+        fill_color="#F8FAFF",
+        align="center",
+        font=dict(color="#002D62", size=12)
+    )
+)])
 
+# Ajuste para eliminar espacio extra
+fig.update_layout(
+    margin=dict(l=0, r=0, t=0, b=0),
+    height=180
+)
+
+# Mostrar la tabla
+st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
         # ==== MÉTRICA PRINCIPAL ====
         st.metric("💰 Prima pura total (USD)", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
