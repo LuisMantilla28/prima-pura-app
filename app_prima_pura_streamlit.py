@@ -174,33 +174,33 @@ st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
 st.markdown("""
 <style>
 .header {
-    background: linear-gradient(90deg, #1C1C1C, #2E2E2E);
-    color: #F8E9A1;
+    background: linear-gradient(90deg, #FAFAFA, #ECECEC);
+    color: #333;
     text-align: center;
-    padding: 1.5rem 1rem;
+    padding: 1.3rem 1rem;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     margin-bottom: 28px;
 }
 .header h1 {
-    font-size: 1.8rem;
+    font-size: 1.7rem;
     font-weight: 700;
-    letter-spacing: 1px;
+    color: #222;
     margin: 0;
 }
 .header p {
-    font-size: 1.05rem;
-    color: #FFF6C3;
+    font-size: 1rem;
+    color: #555;
     margin-top: 8px;
 }
 .header::after {
     content: "";
     display: block;
-    height: 3px;
-    width: 80%;
-    margin: 14px auto 0;
-    background: linear-gradient(90deg, #FFD700, #C0A000);
-    border-radius: 5px;
+    height: 2px;
+    width: 70%;
+    margin: 12px auto 0;
+    background: #888;
+    border-radius: 2px;
 }
 </style>
 
