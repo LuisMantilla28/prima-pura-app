@@ -269,7 +269,28 @@ with col2:
     extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
 
 # ==== BOTÓN DE CÁLCULO ====
-if st.button("🔢 Calcular prima"):
+# ==== ESTILO DEL BOTÓN ====
+st.markdown("""
+<style>
+div.stButton > button:first-child {
+    background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
+    color: white;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+div.stButton > button:hover {
+    background: linear-gradient(90deg, #003D82, #0065BF, #199BFF);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.25);
+}
+</style>
+""", unsafe_allow_html=True)
+
+if st.button("🔢 Calcular prima pura"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
         'estudios_area': [area],
