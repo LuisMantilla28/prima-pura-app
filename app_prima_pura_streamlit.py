@@ -170,10 +170,10 @@ from datetime import datetime
 
 st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
 
-# ==== ENCABEZADO EMPRESARIAL ====
+# ==== ENCABEZADO ====
 st.markdown("""
 <style>
-/* ======= Encabezado Moderno ======= */
+/* ======= Encabezado ======= */
 .header {
     background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
     color: white;
@@ -240,7 +240,7 @@ st.markdown("""
 
 
 # ==== TÍTULO DE SECCIÓN ====
-st.write("👤Ingrese los datos del estudiante:")
+st.write("👤 Ingrese los datos del estudiante:")
 
 # ==== CARGA DE MODELOS ====
 try:
@@ -269,7 +269,7 @@ with col2:
     extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
 
 # ==== BOTÓN DE CÁLCULO ====
-if st.button("🚀 Calcular prima"):
+if st.button("🔢 Calcular prima"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
         'estudios_area': [area],
