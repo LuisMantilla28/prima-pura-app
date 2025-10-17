@@ -304,7 +304,6 @@ if st.button("🔢 Calcular prima pura"):
         
 
         # ==== TABLA (Plotly con nombres personalizados y orden correcto) ====
-        st.markdown("### 💵 Prima por cobertura (USD):")
         
         TITULOS = {
             "Gastos_Adicionales_siniestros_monto": "💼 Gastos Adicionales",
