@@ -173,67 +173,39 @@ st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
 # ==== ENCABEZADO ====
 st.markdown("""
 <style>
-/* ======= Encabezado ======= */
 .header {
-    background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
-    color: white;
+    background: linear-gradient(90deg, #1C1C1C, #2E2E2E);
+    color: #F8E9A1;
     text-align: center;
     padding: 1.5rem 1rem;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 28px; /* ← espacio debajo del encabezado */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    margin-bottom: 28px;
 }
-
-/* Animación sutil en el fondo */
-@keyframes gradientFlow {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-.header {
-    background-size: 200% 200%;
-    animation: gradientFlow 6s ease infinite;
-}
-
-/* Título principal */
 .header h1 {
     font-size: 1.8rem;
     font-weight: 700;
+    letter-spacing: 1px;
     margin: 0;
-    letter-spacing: 0.5px;
 }
-
-/* Subtítulo ("Seguros Sigma") más grande */
 .header p {
-    font-size: 1.25rem; /* ← más grande */
-    color: #E3F2FD;
+    font-size: 1.05rem;
+    color: #FFF6C3;
     margin-top: 8px;
-    font-weight: 500;
 }
-
-/* Línea luminosa inferior */
 .header::after {
     content: "";
     display: block;
     height: 3px;
     width: 80%;
     margin: 14px auto 0;
-    background: linear-gradient(90deg, #00C9FF, #92FE9D);
+    background: linear-gradient(90deg, #FFD700, #C0A000);
     border-radius: 5px;
-    opacity: 0.9;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-    .header h1 { font-size: 1.5rem; }
-    .header p { font-size: 1rem; }
 }
 </style>
 
 <div class="header">
-    <h1>Póliza Dormitorios</h1>
+    <h1>👤 Póliza Dormitorios</h1>
     <p><strong>Seguros Sigma</strong></p>
 </div>
 """, unsafe_allow_html=True)
