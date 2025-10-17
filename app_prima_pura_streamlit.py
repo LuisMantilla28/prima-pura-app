@@ -164,10 +164,88 @@ def load_model_objects():
 # ==========================================
 # STREAMLIT UI
 # ==========================================
-st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
-st.title("🔢 Estimación de Prima Pura (Hurdle + Tweedie)")
+import streamlit as st
+import pandas as pd
 
-# Cargar modelo / preprocess
+st.set_page_config(
+    page_title="Estimador de Prima Pura",
+    page_icon="💼",
+    layout="centered"
+)
+
+# ==== ESTILOS PERSONALIZADOS ====
+st.markdown("""
+    <style>
+    /* Fondo general */
+    .stApp {
+        background-color: #f4f6f9;
+    }
+
+    /* Banner */
+    .banner {
+        background: linear-gradient(90deg, #002B5B 0%, #005B96 100%);
+        color: white;
+        padding: 30px 10px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .banner h1 {
+        font-size: 2.2em;
+        margin-bottom: 5px;
+    }
+
+    .banner p {
+        font-size: 1.1em;
+        color: #e3e3e3;
+        margin-top: 0;
+    }
+
+    /* Botones y métricas */
+    div[data-testid="stMetricValue"] {
+        color: #002B5B;
+        font-weight: bold;
+    }
+
+    .stButton>button {
+        background-color: #005B96;
+        color: white;
+        border-radius: 8px;
+        padding: 0.6em 1.2em;
+        font-weight: 600;
+        border: none;
+    }
+
+    .stButton>button:hover {
+        background-color: #0074CC;
+        color: white;
+        border: none;
+    }
+
+    /* Pie de página */
+    .footer {
+        text-align: center;
+        font-size: 0.85em;
+        color: gray;
+        margin-top: 40px;
+        border-top: 1px solid #ddd;
+        padding-top: 10px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+# ==== CABECERA ====
+st.markdown("""
+    <div class="banner">
+        <h1>🔢 Estimador de Prima Pura</h1>
+        <p>Modelo Actuarial Hurdle + Tweedie • Proyecto de Estimación Individual</p>
+    </div>
+""", unsafe_allow_html=True)
+
+
+# ==== CARGAR MODELOS ====
 try:
     objetos = load_model_objects()
     preprocess = objetos["preprocess"]
@@ -177,35 +255,42 @@ except Exception as e:
     st.error(f"No se pudo cargar el modelo: {e}")
     st.stop()
 
-st.write("### Ingrese los datos del estudiante:")
 
-col1, col2 = st.columns(2)
-with col1:
-    anio = st.selectbox("Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
-    area = st.selectbox("Área de estudios", ["Administracion", "Humanidades", "Ciencias", "Otro"], index=1)
-    calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01, format="%.2f")
-    dos_mas = st.selectbox("¿2 o más inquilinos?", ["No", "Sí"], index=0)
+# ==== FORMULARIO ====
+st.subheader("🧾 Ingrese los datos del estudiante")
 
-with col2:
-    en_campus = st.selectbox("¿Vive fuera del campus?", ["No", "Sí"], index=1)
-    # Si responde "No", se bloquea y pone en 0.0
-    if en_campus == "No":
-        dist_campus = st.number_input(
-            "Distancia al campus (km)",
-            min_value=0.0, max_value=0.0, value=0.0,
-            step=0.0, format="%.6f",
-            disabled=True
-        )
-    else:
-        dist_campus = st.number_input(
-            "Distancia al campus (km)",
-            min_value=0.0, value=1.111582, step=0.000001, format="%.6f"
-        )
+with st.expander("👤 Información general", expanded=True):
+    col1, col2 = st.columns(2)
 
-    genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro"], index=0)
-    extintor = st.selectbox("¿Tiene extintor?", ["No", "Sí"], index=1)
+    with col1:
+        anio = st.selectbox("Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
+        area = st.selectbox("Área de estudios", ["Administracion", "Humanidades", "Ciencias", "Otro"], index=1)
+        calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01, format="%.2f")
+        dos_mas = st.selectbox("¿2 o más inquilinos?", ["No", "Sí"], index=0)
 
-if st.button("Calcular prima"):
+    with col2:
+        en_campus = st.selectbox("¿Vive fuera del campus?", ["No", "Sí"], index=1)
+
+        # Bloquear el campo de distancia si vive en campus
+        if en_campus == "No":
+            dist_campus = st.number_input(
+                "Distancia al campus (km)",
+                min_value=0.0, max_value=0.0, value=0.0,
+                step=0.0, format="%.6f",
+                disabled=True
+            )
+        else:
+            dist_campus = st.number_input(
+                "Distancia al campus (km)",
+                min_value=0.0, value=1.111582, step=0.000001, format="%.6f"
+            )
+
+        genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro"], index=0)
+        extintor = st.selectbox("¿Tiene extintor?", ["No", "Sí"], index=1)
+
+
+# ==== BOTÓN DE CÁLCULO ====
+if st.button("🚀 Calcular prima"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
         'estudios_area': [area],
@@ -221,23 +306,35 @@ if st.button("Calcular prima"):
         df_pred = predecir_prima_pura_total(
             nuevo, NUM_COLS, CAT_COLS, COBERTURAS, preprocess, modelos_freq, modelos_sev
         )
-        st.success("Predicción realizada con éxito ✅")
-        st.write("**Prima por cobertura:**")
-        st.dataframe(df_pred[COBERTURAS].round(4))
-        st.metric("Prima pura total", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
-        # Botón de descarga
+        st.success("✅ Predicción realizada con éxito")
+
+        st.divider()
+        st.subheader("📊 Resultados de la estimación")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("💰 Prima pura total", f"${df_pred['prima_pura_total'].iloc[0]:,.4f}")
+        with col2:
+            st.metric("📁 Número de coberturas", f"{len(COBERTURAS)}")
+
+        st.write("### Detalle por cobertura")
+        st.dataframe(df_pred[COBERTURAS].round(4), use_container_width=True)
+
+        # Botón descarga
         st.download_button(
             "⬇️ Descargar CSV",
             data=df_pred.to_csv(index=False).encode("utf-8"),
             file_name="prediccion_individual.csv",
             mime="text/csv"
         )
+
     except Exception as e:
         st.error(f"Error al predecir: {e}")
         st.stop()
 
-# Info de entorno (útil para depurar versiones)
+
+# ==== INFORMACIÓN TÉCNICA ====
 with st.expander("🔧 Información técnica"):
     import sklearn, numpy, scipy, pandas, joblib as jb
     st.write({
@@ -247,4 +344,13 @@ with st.expander("🔧 Información técnica"):
         "pandas": pandas.__version__,
         "joblib": jb.__version__
     })
+
+
+# ==== PIE DE PÁGINA ====
+st.markdown("""
+    <div class="footer">
+        Desarrollado con ❤️ en Streamlit · Modelo actuarial de prima pura Hurdle + Tweedie <br>
+        <span style="font-size:12px;">© 2025 Proyecto académico - Universidad Nacional de Colombia</span>
+    </div>
+""", unsafe_allow_html=True)
 
