@@ -250,7 +250,7 @@ div.stButton > button:hover {
 </style>
 
 <div class="header">
-    <h1>👤 Póliza Dormitorios</h1>
+    <h1>Póliza Dormitorios</h1>
     <p><strong>Seguros Sigma</strong></p>
 </div>
 """, unsafe_allow_html=True)
@@ -321,10 +321,10 @@ if st.button("🔢 Calcular prima pura"):
         )])
 
         fig.update_layout(
-            margin=dict(l=0, r=0, t=20, b=0),
-            height=250
+            margin=dict(l=0, r=0, t=0, b=0),
+            height=180   # antes 250 o más
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
         # ==== MÉTRICA PRINCIPAL ====
         st.metric("💰 Prima pura total (USD)", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
