@@ -4,8 +4,10 @@ numpy>=1.26.4
 scipy>=1.13.0
 pandas>=2.2.2
 joblib>=1.4.2
+plotly>=5.0.0
 openpyxl
 requests
 gdown
+
 
 
