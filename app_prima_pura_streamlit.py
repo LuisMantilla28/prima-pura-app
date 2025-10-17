@@ -183,6 +183,7 @@ st.markdown("""
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     position: relative;
     overflow: hidden;
+    margin-bottom: 28px; /* ← espacio debajo del encabezado */
 }
 
 /* Animación sutil en el fondo */
@@ -204,12 +205,12 @@ st.markdown("""
     letter-spacing: 0.5px;
 }
 
-/* Subtítulo */
+/* Subtítulo ("Seguros Sigma") más grande */
 .header p {
-    font-size: 1rem;
+    font-size: 1.25rem; /* ← más grande */
     color: #E3F2FD;
-    margin-top: 6px;
-    font-weight: 400;
+    margin-top: 8px;
+    font-weight: 500;
 }
 
 /* Línea luminosa inferior */
@@ -218,22 +219,22 @@ st.markdown("""
     display: block;
     height: 3px;
     width: 80%;
-    margin: 12px auto 0;
+    margin: 14px auto 0;
     background: linear-gradient(90deg, #00C9FF, #92FE9D);
     border-radius: 5px;
     opacity: 0.9;
 }
 
-/* Modo responsive */
+/* Responsive */
 @media (max-width: 600px) {
-    .header h1 { font-size: 1.4rem; }
-    .header p { font-size: 0.85rem; }
+    .header h1 { font-size: 1.5rem; }
+    .header p { font-size: 1rem; }
 }
 </style>
 
 <div class="header">
-    <h1>👤 Póliza Dormitorios</h1>
-    <p>Seguros Sigma</p>
+    <h1>Póliza Dormitorios</h1>
+    <p><strong>Seguros Sigma</strong></p>
 </div>
 """, unsafe_allow_html=True)
 
