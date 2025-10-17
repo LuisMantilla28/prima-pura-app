@@ -170,80 +170,103 @@ import pandas as pd
 st.set_page_config(
     page_title="Estimador de Prima Pura",
     page_icon="💼",
-    layout="centered"
+    layout="wide"
 )
 
-# ==== ESTILOS PERSONALIZADOS ====
+# ==== CSS ADAPTATIVO ====
 st.markdown("""
-    <style>
-    /* Fondo general */
-    .stApp {
-        background-color: #f4f6f9;
-    }
+<style>
+/* Fondo general */
+.stApp {
+    background-color: #f4f6f9;
+}
 
-    /* Banner */
-    .banner {
-        background: linear-gradient(90deg, #002B5B 0%, #005B96 100%);
-        color: white;
-        padding: 30px 10px;
-        border-radius: 10px;
-        text-align: center;
-        margin-bottom: 25px;
-    }
+/* Banner adaptable */
+.banner {
+    background: linear-gradient(90deg, #002B5B 0%, #005B96 100%);
+    color: white;
+    padding: 3vw 2vw;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 2vh;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+}
+.banner h1 {
+    font-size: clamp(1.5em, 4vw, 2.5em);
+    margin-bottom: 0.3em;
+    font-weight: 700;
+}
+.banner p {
+    font-size: clamp(0.9em, 1.8vw, 1.1em);
+    color: #e0e8f0;
+    margin-top: 0;
+}
 
-    .banner h1 {
-        font-size: 2.2em;
-        margin-bottom: 5px;
-    }
+/* Botones y métricas */
+div[data-testid="stMetricValue"] {
+    color: #002B5B;
+    font-weight: bold;
+}
+.stButton>button {
+    background-color: #005B96;
+    color: white;
+    border-radius: 8px;
+    padding: 0.8em 1.2em;
+    font-weight: 600;
+    border: none;
+    width: 100%;
+    transition: 0.3s;
+}
+.stButton>button:hover {
+    background-color: #0074CC;
+    transform: scale(1.02);
+}
 
-    .banner p {
-        font-size: 1.1em;
-        color: #e3e3e3;
-        margin-top: 0;
-    }
+/* DataFrame */
+.stDataFrame {
+    overflow-x: auto !important;
+}
 
-    /* Botones y métricas */
-    div[data-testid="stMetricValue"] {
-        color: #002B5B;
-        font-weight: bold;
-    }
+/* Pie de página */
+.footer {
+    text-align: center;
+    font-size: 0.85em;
+    color: gray;
+    margin-top: 3em;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
+}
 
+/* ===== Diseño fluido ===== */
+@media (max-width: 900px) {
+    /* Columnas en una sola línea */
+    [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+    }
     .stButton>button {
-        background-color: #005B96;
-        color: white;
-        border-radius: 8px;
-        padding: 0.6em 1.2em;
-        font-weight: 600;
-        border: none;
+        width: 100% !important;
+        margin-top: 10px;
     }
-
-    .stButton>button:hover {
-        background-color: #0074CC;
-        color: white;
-        border: none;
+    h2, h3, label, p {
+        font-size: 0.95em !important;
     }
-
-    /* Pie de página */
+    .stDataFrame {
+        overflow-x: scroll !important;
+    }
     .footer {
-        text-align: center;
-        font-size: 0.85em;
-        color: gray;
-        margin-top: 40px;
-        border-top: 1px solid #ddd;
-        padding-top: 10px;
+        font-size: 0.8em !important;
     }
-    </style>
+}
+</style>
 """, unsafe_allow_html=True)
-
 
 # ==== CABECERA ====
 st.markdown("""
-    <div class="banner">
-        <h1>🔢 Sigma Seguros </h1>
-        <p>Póliza para Dormitorios</p>
-    </div>
+<div class="banner">
+    <h1>🔢 Sigma Seguros</h1>
+    <p>Póliza para Dormitorios · Estimador de Prima Pura</p>
+</div>
 """, unsafe_allow_html=True)
-
 
 # ==== CARGAR MODELOS ====
 try:
@@ -255,13 +278,12 @@ except Exception as e:
     st.error(f"No se pudo cargar el modelo: {e}")
     st.stop()
 
-
 # ==== FORMULARIO ====
 st.subheader("🧾 Ingrese los datos del estudiante")
 
+# En móvil, las columnas se apilan automáticamente por CSS
 with st.expander("👤 Información general", expanded=True):
     col1, col2 = st.columns(2)
-
     with col1:
         anio = st.selectbox("Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
         area = st.selectbox("Área de estudios", ["Administracion", "Humanidades", "Ciencias", "Otro"], index=1)
@@ -270,27 +292,17 @@ with st.expander("👤 Información general", expanded=True):
 
     with col2:
         en_campus = st.selectbox("¿Vive fuera del campus?", ["No", "Sí"], index=1)
-
-        # Bloquear el campo de distancia si vive en campus
         if en_campus == "No":
-            dist_campus = st.number_input(
-                "Distancia al campus (km)",
-                min_value=0.0, max_value=0.0, value=0.0,
-                step=0.0, format="%.6f",
-                disabled=True
-            )
+            dist_campus = st.number_input("Distancia al campus (km)", min_value=0.0, max_value=0.0, value=0.0,
+                                          step=0.0, format="%.6f", disabled=True)
         else:
-            dist_campus = st.number_input(
-                "Distancia al campus (km)",
-                min_value=0.0, value=1.111582, step=0.000001, format="%.6f"
-            )
-
-        genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro"], index=0)
+            dist_campus = st.number_input("Distancia al campus (km)", min_value=0.0, value=1.111582,
+                                          step=0.000001, format="%.6f")
+        genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro","No respuesta"], index=0)
         extintor = st.selectbox("¿Tiene extintor?", ["No", "Sí"], index=1)
 
-
 # ==== BOTÓN DE CÁLCULO ====
-if st.button("🚀 Calcular prima"):
+if st.button("🚀 Calcular prima pura"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
         'estudios_area': [area],
@@ -308,7 +320,6 @@ if st.button("🚀 Calcular prima"):
         )
 
         st.success("✅ Predicción realizada con éxito")
-
         st.divider()
         st.subheader("📊 Resultados de la estimación")
 
@@ -321,20 +332,17 @@ if st.button("🚀 Calcular prima"):
         st.write("### Detalle por cobertura")
         st.dataframe(df_pred[COBERTURAS].round(4), use_container_width=True)
 
-        # Botón descarga
         st.download_button(
             "⬇️ Descargar CSV",
             data=df_pred.to_csv(index=False).encode("utf-8"),
             file_name="prediccion_individual.csv",
             mime="text/csv"
         )
-
     except Exception as e:
         st.error(f"Error al predecir: {e}")
         st.stop()
 
-
-# ==== INFORMACIÓN TÉCNICA ====
+# ==== INFO TÉCNICA ====
 with st.expander("🔧 Información técnica"):
     import sklearn, numpy, scipy, pandas, joblib as jb
     st.write({
@@ -345,11 +353,11 @@ with st.expander("🔧 Información técnica"):
         "joblib": jb.__version__
     })
 
-
 # ==== PIE DE PÁGINA ====
 st.markdown("""
-    <div class="footer">
-        Desarrollado en Streamlit · Modelo actuarial de prima pura <br>
-        <span style="font-size:12px;">© 2025 Grupo Riskbusters - Universidad Nacional de Colombia</span>
-    </div>
+<div class="footer">
+    Desarrollado en Streamlit. Modelo actuarial de prima pura <br>
+    <span style="font-size:12px;">© 2025 Grupo Riskbusters - Universidad Nacional de Colombia</span>
+</div>
 """, unsafe_allow_html=True)
+
