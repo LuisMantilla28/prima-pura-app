@@ -162,122 +162,12 @@ def load_model_objects():
     return objetos
 
 # ==========================================
-# STREAMLIT UI - Versión final completa (sin theme en set_page_config)
+# STREAMLIT UI
 # ==========================================
-import streamlit as st
-import pandas as pd
+st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
+st.title("🔢 Estimación de Prima Pura (Hurdle + Tweedie)")
 
-# ==== CONFIGURACIÓN DE LA APP ====
-st.set_page_config(
-    page_title="Estimador de Prima Pura",
-    page_icon="💼",
-    layout="wide",
-    initial_sidebar_state="collapsed"  # evita menú lateral en móvil
-)
-
-# ==== CSS GLOBAL (COLORES Y RESPONSIVE) ====
-st.markdown("""
-<style>
-/* ===== PALETA GENERAL Y FONDO ===== */
-html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-    background-color: #f4f6f9 !important;
-    color: #1a1a1a !important;
-}
-
-/* ===== BANNER ===== */
-.banner {
-    background: linear-gradient(90deg, #003C6E 0%, #006EB8 100%) !important;
-    color: #ffffff !important;
-    padding: 3vw 2vw;
-    border-radius: 12px;
-    text-align: center;
-    margin-bottom: 2vh;
-    box-shadow: 0px 4px 10px rgba(0,0,0,0.25);
-}
-.banner h1, .banner p {
-    color: #ffffff !important;
-    text-shadow: 0px 1px 3px rgba(0,0,0,0.25);
-}
-.banner h1 { font-size: clamp(1.6em, 4vw, 2.6em); font-weight: 700; }
-.banner p { font-size: clamp(1em, 1.8vw, 1.2em); }
-
-/* ===== LABELS E INPUTS ===== */
-label, .stSelectbox label, .stNumberInput label {
-    color: #003C6E !important;
-    font-weight: 600 !important;
-    font-size: 0.95em !important;
-}
-.stSelectbox, .stNumberInput, .stTextInput {
-    background-color: #ffffff !important;
-    border-radius: 6px !important;
-}
-/* Texto dentro del campo seleccionado */
-.stSelectbox div[data-baseweb="select"] > div {
-    color: #003C6E !important;
-    font-weight: 500 !important;
-}
-/* Opciones desplegadas del menú (asegura visibilidad en móvil) */
-div[role="listbox"] > div > div {
-    color: #002B5B !important;
-    background-color: #ffffff !important;
-}
-div[role="listbox"] > div:hover {
-    background-color: #E0F0FF !important;
-}
-
-/* ===== BOTONES ===== */
-.stButton>button {
-    background-color: #005B96;
-    color: white;
-    border-radius: 8px;
-    padding: 0.8em 1.2em;
-    font-weight: 600;
-    border: none;
-    width: 100%;
-    transition: 0.3s;
-}
-.stButton>button:hover {
-    background-color: #0074CC;
-    transform: scale(1.02);
-}
-
-/* ===== MÉTRICAS ===== */
-div[data-testid="stMetricValue"] {
-    color: #002B5B !important;
-    font-weight: bold;
-}
-
-/* ===== TABLAS Y FOOTER ===== */
-.stDataFrame { overflow-x: auto !important; }
-.footer {
-    text-align: center;
-    font-size: 0.85em;
-    color: gray;
-    margin-top: 3em;
-    border-top: 1px solid #ddd;
-    padding-top: 10px;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 900px) {
-    [data-testid="stHorizontalBlock"] { flex-direction: column !important; }
-    .stButton>button { width: 100% !important; margin-top: 10px; }
-    h2, h3, label, p { font-size: 0.95em !important; }
-    .stDataFrame { overflow-x: scroll !important; }
-    .footer { font-size: 0.8em !important; }
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ==== CABECERA ====
-st.markdown("""
-<div class="banner">
-    <h1>🔢 Sigma Seguros</h1>
-    <p>Póliza para Dormitorios · Estimador de Prima Pura</p>
-</div>
-""", unsafe_allow_html=True)
-
-# ==== CARGAR MODELOS ====
+# Cargar modelo / preprocess
 try:
     objetos = load_model_objects()
     preprocess = objetos["preprocess"]
@@ -287,30 +177,35 @@ except Exception as e:
     st.error(f"No se pudo cargar el modelo: {e}")
     st.stop()
 
-# ==== FORMULARIO ====
-st.subheader("🧾 Ingrese los datos del estudiante")
+st.write("### Ingrese los datos del estudiante:")
 
-with st.expander("👤 Información general", expanded=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        anio = st.selectbox("Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
-        area = st.selectbox("Área de estudios", ["Administracion", "Humanidades", "Ciencias", "Otro"], index=1)
-        calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01, format="%.2f")
-        dos_mas = st.selectbox("¿2 o más inquilinos?", ["No", "Sí"], index=0)
+col1, col2 = st.columns(2)
+with col1:
+    anio = st.selectbox("Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
+    area = st.selectbox("Área de estudios", ["Administracion", "Humanidades", "Ciencias", "Otro"], index=1)
+    calif_prom = st.number_input("Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01, format="%.2f")
+    dos_mas = st.selectbox("¿2 o más inquilinos?", ["No", "Sí"], index=0)
 
-    with col2:
-        en_campus = st.selectbox("¿Vive fuera del campus?", ["No", "Sí"], index=1)
-        if en_campus == "No":
-            dist_campus = st.number_input("Distancia al campus (km)", min_value=0.0, max_value=0.0, value=0.0,
-                                          step=0.0, format="%.6f", disabled=True)
-        else:
-            dist_campus = st.number_input("Distancia al campus (km)", min_value=0.0, value=1.111582,
-                                          step=0.000001, format="%.6f")
-        genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro", "No respuesta"], index=0)
-        extintor = st.selectbox("¿Tiene extintor?", ["No", "Sí"], index=1)
+with col2:
+    en_campus = st.selectbox("¿Vive fuera del campus?", ["No", "Sí"], index=1)
+    # Si responde "No", se bloquea y pone en 0.0
+    if en_campus == "No":
+        dist_campus = st.number_input(
+            "Distancia al campus (km)",
+            min_value=0.0, max_value=0.0, value=0.0,
+            step=0.0, format="%.6f",
+            disabled=True
+        )
+    else:
+        dist_campus = st.number_input(
+            "Distancia al campus (km)",
+            min_value=0.0, value=1.111582, step=0.000001, format="%.6f"
+        )
 
-# ==== BOTÓN DE CÁLCULO ====
-if st.button("🚀 Calcular prima pura"):
+    genero = st.selectbox("Género", ["Masculino", "Femenino", "Otro"], index=0)
+    extintor = st.selectbox("¿Tiene extintor?", ["No", "Sí"], index=1)
+
+if st.button("Calcular prima"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
         'estudios_area': [area],
@@ -326,20 +221,12 @@ if st.button("🚀 Calcular prima pura"):
         df_pred = predecir_prima_pura_total(
             nuevo, NUM_COLS, CAT_COLS, COBERTURAS, preprocess, modelos_freq, modelos_sev
         )
+        st.success("Predicción realizada con éxito ✅")
+        st.write("**Prima por cobertura:**")
+        st.dataframe(df_pred[COBERTURAS].round(4))
+        st.metric("Prima pura total", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
-        st.success("✅ Predicción realizada con éxito")
-        st.divider()
-        st.subheader("📊 Resultados de la estimación")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("💰 Prima pura total", f"${df_pred['prima_pura_total'].iloc[0]:,.4f}")
-        with col2:
-            st.metric("📁 Número de coberturas", f"{len(COBERTURAS)}")
-
-        st.write("### Detalle por cobertura")
-        st.dataframe(df_pred[COBERTURAS].round(4), use_container_width=True)
-
+        # Botón de descarga
         st.download_button(
             "⬇️ Descargar CSV",
             data=df_pred.to_csv(index=False).encode("utf-8"),
@@ -350,7 +237,7 @@ if st.button("🚀 Calcular prima pura"):
         st.error(f"Error al predecir: {e}")
         st.stop()
 
-# ==== INFORMACIÓN TÉCNICA ====
+# Info de entorno (útil para depurar versiones)
 with st.expander("🔧 Información técnica"):
     import sklearn, numpy, scipy, pandas, joblib as jb
     st.write({
@@ -361,11 +248,4 @@ with st.expander("🔧 Información técnica"):
         "joblib": jb.__version__
     })
 
-# ==== PIE DE PÁGINA ====
-st.markdown("""
-<div class="footer">
-    Desarrollado en Streamlit · Modelo actuarial de prima pura <br>
-    <span style="font-size:12px;">© 2025 Grupo Riskbusters - Universidad Nacional de Colombia</span>
-</div>
-""", unsafe_allow_html=True)
 
