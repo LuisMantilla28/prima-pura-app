@@ -197,13 +197,13 @@ st.markdown("""
 
 <div class="header">
     <h1>Póliza Dormitorios</h1>
-    <p>Modelo Actuarial – Hurdle + Tweedie</p>
+    <p>Seguros Sigma</p>
 </div>
 """, unsafe_allow_html=True)
 
 
 # ==== TÍTULO DE SECCIÓN ====
-st.write("###👤Ingrese los datos del estudiante:")
+st.write("👤Ingrese los datos del estudiante:")
 
 # ==== CARGA DE MODELOS ====
 try:
