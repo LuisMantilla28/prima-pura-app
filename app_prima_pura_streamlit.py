@@ -174,42 +174,40 @@ st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
 st.markdown("""
 <style>
 .header {
-    background: linear-gradient(90deg, #FAFAFA, #ECECEC);
-    color: #333;
+    background: linear-gradient(90deg, #006D5B, #009879);
+    color: white;
     text-align: center;
-    padding: 1.3rem 1rem;
+    padding: 1.5rem 1rem;
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     margin-bottom: 28px;
 }
 .header h1 {
-    font-size: 1.7rem;
+    font-size: 1.8rem;
     font-weight: 700;
-    color: #222;
     margin: 0;
 }
 .header p {
     font-size: 1rem;
-    color: #555;
-    margin-top: 8px;
+    color: #E0F2EF;
+    margin-top: 6px;
 }
 .header::after {
     content: "";
     display: block;
-    height: 2px;
-    width: 70%;
-    margin: 12px auto 0;
-    background: #888;
-    border-radius: 2px;
+    height: 3px;
+    width: 75%;
+    margin: 14px auto 0;
+    background: linear-gradient(90deg, #A7F3D0, #6EE7B7);
+    border-radius: 5px;
 }
 </style>
 
 <div class="header">
-    <h1>👤 Póliza Dormitorios</h1>
+    <h1>Póliza Dormitorios</h1>
     <p><strong>Seguros Sigma</strong></p>
 </div>
 """, unsafe_allow_html=True)
-
 
 # ==== TÍTULO DE SECCIÓN ====
 st.write("👤 Ingrese los datos del estudiante:")
