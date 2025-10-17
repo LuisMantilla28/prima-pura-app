@@ -171,11 +171,14 @@ from datetime import datetime
 st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
 
 # ==== ENCABEZADO ====
+# ==========================================
+# ENCABEZADO MODERNO AZUL CORPORATIVO
+# ==========================================
 st.markdown("""
 <style>
 /* ======= Encabezado ======= */
 .header {
-    background: linear-gradient(90deg, #006D5B, #009879);
+    background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
     color: white;
     text-align: center;
     padding: 1.5rem 1rem;
@@ -200,13 +203,13 @@ st.markdown("""
     height: 3px;
     width: 75%;
     margin: 14px auto 0;
-    background: linear-gradient(90deg, #A7F3D0, #6EE7B7);
+    background: linear-gradient(90deg, #66B2FF, #99CCFF);
     border-radius: 5px;
 }
 
-/* ======= Botón de Calcular Prima ======= */
+/* ======= Botón "Calcular Prima" ======= */
 div.stButton > button:first-child {
-    background: linear-gradient(90deg, #006D5B, #009879);
+    background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
     color: white;
     font-weight: 600;
     border-radius: 10px;
@@ -216,7 +219,7 @@ div.stButton > button:first-child {
     transition: all 0.3s ease;
 }
 div.stButton > button:hover {
-    background: linear-gradient(90deg, #007F68, #00B88F);
+    background: linear-gradient(90deg, #003D82, #0065BF, #199BFF);
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.25);
 }
@@ -233,6 +236,7 @@ div.stButton > button:hover {
     <p><strong>Seguros Sigma</strong></p>
 </div>
 """, unsafe_allow_html=True)
+
 # ==== TÍTULO DE SECCIÓN ====
 st.write("👤 Ingrese los datos del estudiante:")
 
@@ -310,7 +314,7 @@ with st.expander("🔧 Información técnica"):
 # ==== PIE DE PÁGINA ====
 st.markdown(f"""
 <div class="footer">
-    © {datetime.now().year} Grupo Riskbusters - Universidad Nacional de Colombia · Desarrollado por <a href="https://streamlit.io" target="_blank">Streamlit</a> 💡
+    © {datetime.now().year} Equipo Riskbusters - Universidad Nacional de Colombia · Desarrollado con <a href="https://streamlit.io" target="_blank">Streamlit</a> 💡
 </div>
 """, unsafe_allow_html=True)
 
