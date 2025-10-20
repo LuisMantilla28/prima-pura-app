@@ -398,10 +398,11 @@ def render_small_table(df: pd.DataFrame, caption: str):
         use_container_width=True,
         hide_index=True,
         column_config={
-            "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
-            "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
-            "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
-        },
+        "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
+        "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
+        "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
+        "Factor": st.column_config.NumberColumn("Factor", format="%.4f"),  # <--- añadido
+    },
     )
 
 
@@ -465,13 +466,7 @@ def main():
             tabla_vars["Factor"] = (pd.to_numeric(tabla_vars["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
             tabla_vars = tabla_vars.sort_values("Variable").reset_index(drop=True)
             tabla_vars = tabla_vars[["Variable", "%Cambio_prima", "Factor"]]
-            render_small_table(tabla_vars, "Cambio porcentual de la PRIMA ESPERADA por variable (selección)",column_config={
-                "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
-                "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
-                "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
-                "Factor": st.column_config.NumberColumn("Factor", format="%.4f") # <-- añade esto
-            }
-            )
+            render_small_table(tabla_vars, "Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
 
     # =====================
     # LAYOUT SUPERIOR CENTRAL: tabla con 3 variables desde %Cambio_total
