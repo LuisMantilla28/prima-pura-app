@@ -469,8 +469,8 @@ def main():
                 "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
                 "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
                 "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
-                "Factor": st.column_config.NumberColumn("Factor", format="%.4f"),  # <-- añade esto
-            },
+                "Factor": st.column_config.NumberColumn("Factor", format="%.4f") # <-- añade esto
+            }
             )
 
     # =====================
