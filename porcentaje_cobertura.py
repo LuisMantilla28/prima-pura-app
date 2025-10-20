@@ -455,7 +455,7 @@ def main():
             metrics = header_metrics.get(cobertura, {})
             g1, g2, g3, g4 = st.columns(4)
             with g1: kpi("Media real de N", metrics.get("Media real de N", np.nan))
-            with g2: kpi("Media E[N]", metrics.get("Media predicha de N", np.nan))
+            with g2: kpi("Media predicha de N", metrics.get("Media predicha de N", np.nan))
             with g3: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan))
             with g4: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan))
 
