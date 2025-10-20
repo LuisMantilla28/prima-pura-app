@@ -60,7 +60,9 @@ html, body, [class*="css"], .stMarkdown, .stText, .stDataFrame { font-family: In
 h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
 
 /***** KPI cards (métricas) *****/
-.kpi-card { background: #ffffff; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.kpi-card { background: #fcfcfc;
+border: 1px solid rgba(0,0,0,0.05);
+box-shadow: 0 2px 6px rgba(0,0,0,0.05);}
 .kpi-card .metric-label { font-size: 0.85rem; color: #6b7280; margin-bottom: 6px; }
 .kpi-card .metric-value { font-size: 1.35rem; font-weight: 700; }
 
