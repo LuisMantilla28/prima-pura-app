@@ -105,25 +105,25 @@ def get_fallback_data() -> Dict[str, Any]:
     header_metrics = {
         "Gastos_Adicionales_siniestros_monto": {
             "Media real de N": 0.055625,
-            "Media E[N]": 0.05318535298803486,
+            "Media predicha de N": 0.05318535298803486,
             "Severidad esperada media (predicha)": 5425.88,
             "Severidad real media (observada)": 5395.85,
         },
         "Gastos_Medicos_RC_siniestros_monto": {
             "Media real de N": 0.021875,
-            "Media E[N]": 0.023721117738488857,
+            "Media predicha de N": 0.023721117738488857,
             "Severidad esperada media (predicha)": 17170.89,
             "Severidad real media (observada)": 15154.66,
         },
         "Resp_Civil_siniestros_monto": {
             "Media real de N": 0.009375,
-            "Media E[N]": 0.008137502924526774,
+            "Media predicha de N": 0.008137502924526774,
             "Severidad esperada media (predicha)": 7629.31,
             "Severidad real media (observada)": 9311.54,
         },
         "Contenidos_siniestros_monto": {
             "Media real de N": 0.103125,
-            "Media E[N]": 0.09827778812479611,
+            "Media predicha de N": 0.09827778812479611,
             "Severidad esperada media (predicha)": 987.06,
             "Severidad real media (observada)": 971.40,
         },
@@ -455,7 +455,7 @@ def main():
             metrics = header_metrics.get(cobertura, {})
             g1, g2, g3, g4 = st.columns(4)
             with g1: kpi("Media real de N", metrics.get("Media real de N", np.nan))
-            with g2: kpi("Media E[N]", metrics.get("Media E[N]", np.nan))
+            with g2: kpi("Media E[N]", metrics.get("Media predicha de N", np.nan))
             with g3: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan))
             with g4: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan))
 
