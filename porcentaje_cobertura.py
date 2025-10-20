@@ -462,8 +462,16 @@ def main():
             st.markdown("---")
             df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable", "%Cambio_prima"]))
             tabla_vars = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
+            tabla_vars["Factor"] = (pd.to_numeric(tabla_vars["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
             tabla_vars = tabla_vars.sort_values("Variable").reset_index(drop=True)
-            render_small_table(tabla_vars, "Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
+            tabla_vars = tabla_vars[["Variable", "%Cambio_prima", "Factor"]]
+            render_small_table(tabla_vars, "Cambio porcentual de la PRIMA ESPERADA por variable (selección)"column_config={
+                "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
+                "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
+                "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
+                "Factor": st.column_config.NumberColumn("Factor", format="%.4f"),  # <-- añade esto
+            },
+            )
 
     # =====================
     # LAYOUT SUPERIOR CENTRAL: tabla con 3 variables desde %Cambio_total
