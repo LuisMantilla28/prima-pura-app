@@ -390,10 +390,7 @@ def main():
     data = try_remote_get_metrics(mod)
     if data is None:
         data = get_fallback_data()
-        st.info(
-            "Usando datos de ejemplo embebidos. Si agregas un módulo remoto con `get_metrics()`, "
-            "el dashboard consumirá tus cifras reales."
-        )
+    
 
     header_metrics: Dict[str, Dict[str, float]] = data["header_metrics"]
     cambio_por_cobertura: Dict[str, pd.DataFrame] = data["cambio_por_cobertura"]
