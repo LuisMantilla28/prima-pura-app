@@ -434,59 +434,7 @@ def main():
     render_small_table(tabla_total, "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
 
     # =====================
-    # Información de la fuente remota
-    # =====================
-    with st.expander("Conexión al módulo remoto (.py)"):
-        st.write(
-            """
-            **Cómo usar el módulo remoto**
 
-            1. Sube a GitHub (en modo público o con raw accesible) un archivo `.py` que
-               exponga la función `get_metrics()` devolviendo un `dict` con las claves:
-               - `header_metrics`: `dict[str, dict[str, float]]`
-               - `cambio_por_cobertura`: `dict[str, pd.DataFrame]` (o lista de dicts convertible a DataFrame)
-               - `cambio_total`: `pd.DataFrame`
-
-            2. Obtén la URL **RAW** de ese `.py` y colócala en la variable de entorno `REMOTE_PY_URL`
-               o modifica la constante `REMOTE_PY_URL` arriba.
-
-            3. Estructura de ejemplo para `get_metrics()`:
-
-            ```python
-            import pandas as pd
-
-            def get_metrics():
-                header_metrics = {
-                    "Gastos_Adicionales_siniestros_monto": {
-                        "Media real de N": 0.0556,
-                        "Media E[N]": 0.0532,
-                        "Severidad esperada media (predicha)": 5425.88,
-                        "Severidad real media (observada)": 5395.85,
-                    },
-                    # ... resto de coberturas ...
-                }
-
-                cambio_por_cobertura = {
-                    "Gastos_Adicionales_siniestros_monto": pd.DataFrame(
-                        {"Variable": ["num_bin__2_o_mas_inquilinos", ...], "%Cambio_prima": [354.83, ...]}
-                    ),
-                    # ... resto ...
-                }
-
-                cambio_total = pd.DataFrame({
-                    "Variable": ["num_bin__2_o_mas_inquilinos", ...],
-                    "Factor_total": [4.2280, ...],
-                    "%Cambio_total": [322.8016, ...],
-                })
-
-                return {
-                    "header_metrics": header_metrics,
-                    "cambio_por_cobertura": cambio_por_cobertura,
-                    "cambio_total": cambio_total,
-                }
-            ```
-            """
-        )
 
 
 if __name__ == "__main__":
