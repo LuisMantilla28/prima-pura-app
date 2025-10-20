@@ -511,3 +511,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+# ==== PIE DE PÁGINA ====
+st.markdown(f"""
+<div class="footer">
+    © {datetime.now().year} Desarrollado con 
+    <a href="https://streamlit.io" target="_blank">Streamlit</a> ·💡Equipo Riskbusters - Universidad Nacional de Colombia
+</div>
+""", unsafe_allow_html=True)
