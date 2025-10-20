@@ -1,11 +1,11 @@
 # app.py
 # -------------------------------------------------------------
-# App Streamlit para visualizar métricas por cobertura
-# y conectarse (opcionalmente) a un módulo remoto .py en GitHub
+# App Streamlit ejecutivo para métricas y coberturas
+# con opción de conectar un módulo .py remoto (GitHub RAW)
 # -------------------------------------------------------------
-# Requisitos sugeridos en el entorno:
+# Requisitos sugeridos:
 #   pip install streamlit requests pandas numpy
-# Ejecutar localmente:  streamlit run app.py
+# Ejecutar:  streamlit run app.py
 # -------------------------------------------------------------
 
 import io
@@ -27,7 +27,10 @@ import streamlit as st
 REMOTE_PY_URL = os.getenv("REMOTE_PY_URL", "")  # <-- pon la URL RAW aquí o via variable de entorno
 REMOTE_MODULE_NAME = "modelo_remoto"            # nombre interno con el que importaremos el módulo
 
-# 2) Nombres canónicos de coberturas (las claves deben coincidir con lo que devuelva el módulo remoto)
+# 2) Logo opcional de tu organización para el header (URL pública). Deja vacío para ocultar.
+LOGO_URL = os.getenv("LOGO_URL", "")
+
+# 3) Nombres canónicos de coberturas (deben coincidir con las claves de los datos)
 COBERTURAS = [
     "Gastos_Adicionales_siniestros_monto",
     "Gastos_Medicos_RC_siniestros_monto",
@@ -35,12 +38,40 @@ COBERTURAS = [
     "Contenidos_siniestros_monto",
 ]
 
-# 3) Variables a mostrar en tablas según el requerimiento
+# 4) Variables a mostrar en tablas según requerimiento
 VARS_BIN = [
     "num_bin__2_o_mas_inquilinos",
     "num_bin__en_campus",
     "num_bin__extintor_incendios",
 ]
+
+# ================================
+# ESTILO (CSS) — look ejecutivo
+# ================================
+EXECUTIVE_CSS = """
+<style>
+/***** Tipografía y base *****/
+html, body, [class*="css"], .stMarkdown, .stText, .stDataFrame { font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+
+/***** Contenedores *****/
+.block-container { padding-top: 1.2rem; padding-bottom: 2rem; }
+
+/***** Títulos *****/
+h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
+
+/***** KPI cards (métricas) *****/
+.kpi-card { background: #ffffff; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.kpi-card .metric-label { font-size: 0.85rem; color: #6b7280; margin-bottom: 6px; }
+.kpi-card .metric-value { font-size: 1.35rem; font-weight: 700; }
+
+/***** Tablas *****/
+caption { color: #6b7280 !important; text-transform: uppercase; letter-spacing: .03em; font-size: .78rem; }
+
+/***** Selector pegable (sticky) *****/
+.sticky { position: sticky; top: 0.5rem; z-index: 999; }
+
+</style>
+"""
 
 # -------------------------------------------------------------
 # Utilidad: cargar un .py remoto (raw GitHub) y convertirlo en módulo importable
@@ -73,7 +104,6 @@ def load_remote_module(raw_url: str, module_name: str):
 # -------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def get_fallback_data() -> Dict[str, Any]:
-    # Métricas de la cabecera por cobertura
     header_metrics = {
         "Gastos_Adicionales_siniestros_monto": {
             "Media real de N": 0.055625,
@@ -101,7 +131,6 @@ def get_fallback_data() -> Dict[str, Any]:
         },
     }
 
-    # %Cambio de la PRIMA ESPERADA por variable (individual por cobertura)
     cambio_por_cobertura = {
         "Gastos_Adicionales_siniestros_monto": pd.DataFrame(
             {
@@ -257,7 +286,6 @@ def get_fallback_data() -> Dict[str, Any]:
         ),
     }
 
-    # %Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)
     cambio_total = pd.DataFrame(
         {
             "Variable": [
@@ -347,32 +375,36 @@ def fmt_float(x, nd=4):
         return x
 
 
-def top_header_panel(metrics: Dict[str, float]):
-    """Render de la cabecera (80% derecha):
-    - Media real de N, Media E[N]
-    - Severidad esperada media (predicha), Severidad real media (observada)
-    """
-    st.subheader("Métricas clave")
-    cols = st.columns(4, gap="small")
-    labels = [
-        "Media real de N",
-        "Media E[N]",
-        "Severidad esperada media (predicha)",
-        "Severidad real media (observada)",
-    ]
-    for i, lab in enumerate(labels):
-        val = metrics.get(lab, np.nan)
-        cols[i].metric(lab, fmt_float(val))
+def kpi(label: str, value):
+    """Tarjeta KPI con estilo consistente."""
+    st.markdown(
+        f"""
+        <div class='kpi-card'>
+            <div class='metric-label'>{label}</div>
+            <div class='metric-value'>{fmt_float(value)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def render_small_table(df: pd.DataFrame, caption: str):
     df2 = df.copy()
-    # si existe columna de %
+    # Dar formato a columnas con %
     for col in df2.columns:
         if "%" in col:
-            df2[col] = df2[col].apply(lambda v: fmt_float(v, 4))
+            df2[col] = df2[col].apply(lambda v: float(v))
     st.caption(caption)
-    st.dataframe(df2, use_container_width=True, hide_index=True)
+    st.dataframe(
+        df2,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
+            "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
+            "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
+        },
+    )
 
 
 # ================================
@@ -380,8 +412,17 @@ def render_small_table(df: pd.DataFrame, caption: str):
 # ================================
 
 def main():
-    st.set_page_config(page_title="Métricas de Prima por Cobertura", layout="wide")
-    st.title("Dashboard de Coberturas y Métricas")
+    st.set_page_config(page_title="Métricas de Prima por Cobertura", page_icon="📊", layout="wide")
+    st.markdown(EXECUTIVE_CSS, unsafe_allow_html=True)
+
+    # Header ejecutivo con logo y título
+    hcol1, hcol2 = st.columns([1, 6])
+    with hcol1:
+        if LOGO_URL:
+            st.image(LOGO_URL, width=72)
+    with hcol2:
+        st.markdown("<h1 class='title-text'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
+        st.markdown("<span style='color:#6b7280'>Frecuencia · Severidad · Prima esperada</span>", unsafe_allow_html=True)
 
     # Cargar módulo remoto si se configuró REMOTE_PY_URL
     mod = load_remote_module(REMOTE_PY_URL, REMOTE_MODULE_NAME)
@@ -390,7 +431,6 @@ def main():
     data = try_remote_get_metrics(mod)
     if data is None:
         data = get_fallback_data()
-    
 
     header_metrics: Dict[str, Dict[str, float]] = data["header_metrics"]
     cambio_por_cobertura: Dict[str, pd.DataFrame] = data["cambio_por_cobertura"]
@@ -402,36 +442,69 @@ def main():
     colL, colR = st.columns([1, 4], gap="large")
 
     with colL:
-        st.subheader("Cobertura")
-        cobertura = st.selectbox(
-            "Selecciona cobertura",
-            COBERTURAS,
-            index=0,
-            format_func=lambda s: s.replace("_siniestros_monto", "").replace("_", " ")
-        )
+        with st.container(border=True):
+            st.markdown("### Cobertura")
+            cobertura = st.selectbox(
+                "Selecciona cobertura",
+                COBERTURAS,
+                index=0,
+                format_func=lambda s: s.replace("_siniestros_monto", "").replace("_", " ")
+            )
 
     with colR:
-        # 1) Métricas de la cabecera
-        metrics = header_metrics.get(cobertura, {})
-        top_header_panel(metrics)
+        with st.container(border=True):
+            st.markdown("### Métricas clave")
+            metrics = header_metrics.get(cobertura, {})
+            g1, g2, g3, g4 = st.columns(4)
+            with g1: kpi("Media real de N", metrics.get("Media real de N", np.nan))
+            with g2: kpi("Media E[N]", metrics.get("Media E[N]", np.nan))
+            with g3: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan))
+            with g4: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan))
 
-        # 2) Tabla con 3 variables (Cambio % de la PRIMA ESPERADA por variable)
-        df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable", "%Cambio_prima"]))
-        tabla_vars = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
-        tabla_vars = tabla_vars.sort_values("Variable").reset_index(drop=True)
-        render_small_table(tabla_vars, "Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
+            st.markdown("---")
+            df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable", "%Cambio_prima"]))
+            tabla_vars = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
+            tabla_vars = tabla_vars.sort_values("Variable").reset_index(drop=True)
+            render_small_table(tabla_vars, "Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
 
     # =====================
     # LAYOUT SUPERIOR CENTRAL: tabla con 3 variables desde %Cambio_total
     # =====================
-    st.markdown("---")
-    st.subheader("Impacto total ponderado por prima base (variables seleccionadas)")
-    tabla_total = cambio_total[cambio_total["Variable"].isin(VARS_BIN)].copy()
-    tabla_total = tabla_total[["Variable", "Factor_total", "%Cambio_total"]].sort_values("Variable").reset_index(drop=True)
-    render_small_table(tabla_total, "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
+    with st.container(border=True):
+        st.markdown("### Impacto total ponderado por prima base (variables seleccionadas)")
+        tabla_total = cambio_total[cambio_total["Variable"].isin(VARS_BIN)].copy()
+        tabla_total = tabla_total[["Variable", "Factor_total", "%Cambio_total"]].sort_values("Variable").reset_index(drop=True)
+        render_small_table(tabla_total, "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
 
     # =====================
+    # Descarga de datos
+    # =====================
+    with st.expander("Descargar tablas como CSV"):
+        colA, colB = st.columns(2)
+        with colA:
+            if 'tabla_vars' in locals() and not tabla_vars.empty:
+                st.download_button(
+                    label="Descargar selección por cobertura (CSV)",
+                    data=tabla_vars.to_csv(index=False).encode('utf-8'),
+                    file_name=f"cambio_por_variable_{cobertura}.csv",
+                    mime="text/csv",
+                )
+        with colB:
+            st.download_button(
+                label="Descargar impacto total (CSV)",
+                data=tabla_total.to_csv(index=False).encode('utf-8'),
+                file_name="cambio_total_seleccion.csv",
+                mime="text/csv",
+            )
 
+    # =====================
+    # Pie de página
+    # =====================
+    st.markdown("""
+    <div style='margin-top:1rem;color:#9ca3af;font-size:0.85rem'>
+      © {year} — Métricas de suscripción · Actuarial Analytics
+    </div>
+    """.format(year=pd.Timestamp.today().year), unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
