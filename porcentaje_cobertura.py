@@ -499,22 +499,15 @@ def main():
                 mime="text/csv",
             )
 
-    # =====================
-    # Pie de página
-    # =====================
-    st.markdown("""
-    <div style='margin-top:1rem;color:#9ca3af;font-size:0.85rem'>
-      © {year} — Métricas de suscripción · Actuarial Analytics
+    # ==== PIE DE PÁGINA ====
+    st.markdown(f"""
+    <div class="footer">
+        © {datetime.now().year} Desarrollado con 
+        <a href="https://streamlit.io" target="_blank">Streamlit</a> ·💡Equipo Riskbusters - Universidad Nacional de Colombia
     </div>
-    """.format(year=pd.Timestamp.today().year), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
     main()
-# ==== PIE DE PÁGINA ====
-st.markdown(f"""
-<div class="footer">
-    © {datetime.now().year} Desarrollado con 
-    <a href="https://streamlit.io" target="_blank">Streamlit</a> ·💡Equipo Riskbusters - Universidad Nacional de Colombia
-</div>
-""", unsafe_allow_html=True)
+
