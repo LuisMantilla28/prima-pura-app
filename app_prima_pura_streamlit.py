@@ -367,35 +367,51 @@ if st.button("🔢 Calcular prima pura"):
         if inq == 1 and camp == 1 and ext == 0:
             nivel_riesgo = "Alto"
             factores = [
-                "🏠 Vive <b>fuera del campus</b> (mayor exposición).",
-                "👥 Tiene <b>2 o más inquilinos</b> (mayor probabilidad de incidentes).",
-                "🔥 No cuenta con <b>extintor</b> (sin medida preventiva básica)."
+                "🏠 Vive <b>fuera del campus</b>.",
+                "👥 Tiene <b>2 o más inquilinos</b>.",
+                "🔥 No cuenta con <b>extintor</b>."
             ]
-        elif (inq == 1 and ext == 0 and camp == 0) or (inq == 0 and camp == 1 and ext == 0):
+        elif (inq == 1 and camp == 0 and ext == 0):
             nivel_riesgo = "Medio"
             factores = [
-                "🔥 <b>Sin extintor</b> (capacidad de respuesta limitada).",
-                "🏠 Presenta al menos un factor de exposición: <b>vive fuera</b> del campus o <b>varios inquilinos</b>."
+                "🏠 Vive <b>dentro del campus</b>.",
+                "👥 Tiene <b>2 o más inquilinos</b>.",
+                "🔥 No cuenta con <b>extintor</b>."
             ]
-        elif inq == 1 and ext == 1 and camp == 1:
+        elif (inq == 0 and camp == 1 and ext == 0):
+            nivel_riesgo = "Medio"
+            factores = [
+                "🏠 Vive <b>fuera del campus</b>.",
+                "👤 No comparte con otros inquilinos.",
+                "🔥 No cuenta con <b>extintor</b>."
+            ]    
+        elif inq == 1 and camp == 1 and ext == 1:
             nivel_riesgo = "Medio-alto"
             factores = [
-                "🏠 Vive <b>fuera del campus</b> (mayor exposición).",
-                "👥 Tiene <b>2 o más inquilinos</b> (frecuencia potencial más alta).",
-                "🧯 Tiene <b>extintor</b>, que mitiga parcialmente la severidad."
+                "🏠 Vive <b>fuera del campus</b>.",
+                "👥 Tiene <b>2 o más inquilinos</b>.",
+                "🧯 Cuenta con <b>extintor</b>."
             ]
-        elif (inq == 0 and camp == 1 and ext == 1) or (inq == 1 and camp == 0 and ext == 1):
+        elif (inq == 0 and camp == 1 and ext == 1):
             nivel_riesgo = "Medio-bajo"
             factores = [
-                "🧯 Cuenta con <b>extintor</b> (reduce severidad).",
-                "🏠 Solo un factor de exposición: <b>fuera del campus</b> o <b>varios inquilinos</b>."
+                "🏠 Vive <b>fuera del campus</b>.",
+                "👤 No comparte con otros inquilinos.",,
+                "🧯 Cuenta con <b>extintor</b>."
             ]
+       elif (inq == 1 and camp == 0 and ext == 1):
+            nivel_riesgo = "Medio-bajo"
+            factores = [
+                "🏠 Vive <b>fuera del campus</b>.",
+                "👥 Tiene <b>2 o más inquilinos</b>.",
+                "🧯 Cuenta con <b>extintor</b>."
+            ]     
         else:
             nivel_riesgo = "Bajo"
             factores = [
-                "🏠 Vive <b>dentro del campus</b> (mayor control y vigilancia).",
-                "👤 No comparte con varios inquilinos.",
-                "🧯 Tiene <b>extintor</b> (menor probabilidad y severidad)."
+                "🏠 Vive <b>dentro del campus</b>.",
+                "👤 No comparte con otros inquilinos.",
+                "🧯 Tiene <b>extintor</b>."
             ]
         
         # --- Barra de colores con niveles ---
