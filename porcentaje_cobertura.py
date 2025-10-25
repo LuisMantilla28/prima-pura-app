@@ -13,7 +13,7 @@ import io
 import os
 import sys
 import tempfile
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 
 import numpy as np
 import pandas as pd
@@ -32,10 +32,10 @@ REMOTE_MODULE_NAME = "modelo_remoto"
 
 LOGO_URL = os.getenv("LOGO_URL", "")
 
-# Excel ÚNICO SIEMPRE desde GitHub RAW (puedes cambiar por variable de entorno si quieres)
+# Excel ÚNICO SIEMPRE desde GitHub RAW
 EXCEL_URL = "https://raw.githubusercontent.com/LuisMantilla28/prima-pura-app/main/predicciones_train_test_una_hoja.xlsx"
 
-# 3) Nombres canónicos de coberturas (deben coincidir con las claves de los datos)
+# Nombres canónicos de coberturas
 COBERTURAS = [
     "Gastos_Adicionales_siniestros_monto",
     "Gastos_Medicos_RC_siniestros_monto",
@@ -43,7 +43,7 @@ COBERTURAS = [
     "Contenidos_siniestros_monto",
 ]
 
-# 4) Variables a mostrar en tablas según requerimiento
+# Variables a mostrar en tablas/plots (selección)
 VARS_BIN = [
     "num_bin__2_o_mas_inquilinos",
     "num_bin__en_campus",
@@ -55,27 +55,18 @@ VARS_BIN = [
 # ================================
 EXECUTIVE_CSS = """
 <style>
-/***** Tipografía y base *****/
-html, body, [class*="css"], .stMarkdown, .stText, .stDataFrame { font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-
-/***** Contenedores *****/
-.block-container { padding-top: 1.2rem; padding-bottom: 2rem; }
-
-/***** Títulos *****/
+html, body, [class*="css"], .stMarkdown, .stText, .stDataFrame {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+.block-container { padding-top: 1.0rem; padding-bottom: 2rem; }
 h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
-
-/***** KPI cards (métricas) *****/
-.kpi-card { background: #1E3A8A; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); color:#fff; }
+.kpi-card {
+  background: #1E3A8A; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px;
+  padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); color:#fff;
+}
 .kpi-card .metric-label { font-size: 0.85rem; margin-bottom: 6px; opacity:0.9; }
 .kpi-card .metric-value { font-size: 1.35rem; font-weight: 700; }
-
-/***** Tablas *****/
-caption { color: #6b7280 !important; text-transform: uppercase; letter-spacing: .03em; font-size: .78rem; }
-
-/***** Selector pegable (sticky) *****/
-.sticky { position: sticky; top: 0.5rem; z-index: 999; }
-
-/***** Footer *****/
+.caption { color: #6b7280 !important; text-transform: uppercase; letter-spacing: .03em; font-size: .78rem; }
 .footer { margin-top: 1rem; color:#6b7280; }
 </style>
 """
@@ -107,7 +98,6 @@ RISK_MAP_FIXED = {
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
 def load_remote_module(raw_url: str, module_name: str):
-    """Descarga un .py desde raw_url y lo importa como módulo con nombre module_name."""
     if not raw_url:
         return None
     try:
@@ -136,7 +126,7 @@ def read_excel_from_url(url: str) -> pd.DataFrame:
     return pd.read_excel(io.BytesIO(resp.content))
 
 def build_perfil(df: pd.DataFrame) -> pd.DataFrame:
-    """Crea 'perfil_base' a partir de 2_o_mas_inquilinos, en_campus, extintor_incendios (normaliza a 0/1)."""
+    """Crea 'perfil_base' y asigna nivel_riesgo FIJO (según mapa)."""
     df = df.copy()
     for c in ["2_o_mas_inquilinos", "en_campus", "extintor_incendios"]:
         if c not in df.columns:
@@ -147,7 +137,6 @@ def build_perfil(df: pd.DataFrame) -> pd.DataFrame:
         df["en_campus"].astype(str) + "_" +
         df["extintor_incendios"].astype(str)
     )
-    # Asignación FIJA de nivel_riesgo; combos no contemplados → "Medio" (neutral)
     df["nivel_riesgo"] = df["perfil_base"].map(RISK_MAP_FIXED).fillna("Medio")
     return df
 
@@ -160,8 +149,11 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
             raise ValueError(f"Falta la columna '{c}' para la cobertura '{cobertura}'.")
     return col_freq, col_sev, col_pri
 
+# -------------------------------------------------------------
+# PLOTS (matplotlib puro)
+# -------------------------------------------------------------
 def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
-    """Scatter E[N] vs E[Y|N>0] (matplotlib puro) con tamaño ~ prima y color por nivel_riesgo."""
+    """Scatter E[N] vs E[Y|N>0] con contorno blanco fino y color por nivel de riesgo."""
     col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
     df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
 
@@ -170,6 +162,7 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
     s = np.clip(s, np.nanpercentile(s, 5), np.nanpercentile(s, 95))
     s_norm = 40 + (s - s.min()) * (300 - 40) / (s.max() - s.min() + 1e-9)
 
+    # Colores por nivel
     colores = [COLOR_MAP.get(n, "#999999") for n in df_plot["nivel_riesgo"].values]
 
     plt.rcParams.update({"figure.dpi": 120, "font.size": 11, "axes.titlesize": 14, "axes.labelsize": 11})
@@ -180,7 +173,8 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
         s=s_norm,
         c=colores,
         alpha=0.85,
-        edgecolors="none"
+        edgecolors="white",      # contorno blanco
+        linewidths=0.6           # trazo fino
     )
 
     c_label = cobertura.replace("_siniestros_monto", "").replace("_", " ").capitalize()
@@ -190,7 +184,7 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
     ax.grid(True, linestyle="--", alpha=0.35)
     ax.set_facecolor("#FBFBFB")
 
-    # Leyenda manual
+    # Leyenda manual (una sola)
     legend_patches = [mpatches.Patch(color=COLOR_MAP[n], label=n) for n in NIVELES_RIESGO]
     fig.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper right",
                frameon=True, fontsize=10, title_fontsize=11)
@@ -198,8 +192,23 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
     plt.tight_layout()
     return fig, df_plot[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
 
+def plot_bars(df: pd.DataFrame, x_col: str, y_col: str, title: str, xtick_rotation: int = 30):
+    """Gráfico de barras simple (una sola figura) con matplotlib puro."""
+    fig, ax = plt.subplots(figsize=(9, 6))
+    x_vals = df[x_col].astype(str).tolist()
+    y_vals = pd.to_numeric(df[y_col], errors="coerce").fillna(0).tolist()
+
+    ax.bar(x_vals, y_vals)  # sin color explícito
+    ax.set_title(title, fontweight="bold", color="#003366")
+    ax.set_xlabel(x_col.replace("_", " "))
+    ax.set_ylabel(y_col.replace("_", " "))
+    ax.grid(axis="y", linestyle="--", alpha=0.35)
+    plt.setp(ax.get_xticklabels(), rotation=xtick_rotation, ha="right")
+    plt.tight_layout()
+    return fig
+
 # -------------------------------------------------------------
-# Fallback de datos (del mensaje del usuario) en caso de que el módulo remoto no provea funciones
+# Fallback de datos (cuando módulo remoto no provee funciones)
 # -------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def get_fallback_data() -> Dict[str, Any]:
@@ -230,107 +239,23 @@ def get_fallback_data() -> Dict[str, Any]:
         },
     }
 
-    # (… tus tablas de cambio por cobertura y total, tal como ya estaban …)
+    # Tablas de cambio (las tuyas)
     cambio_por_cobertura = {
         "Gastos_Adicionales_siniestros_monto": pd.DataFrame(
-            {
-                "Variable": [
-                    "num_bin__2_o_mas_inquilinos",
-                    "num_bin__en_campus",
-                    "multi__genero_No respuesta",
-                    "multi__año_cursado_4to año",
-                    "multi__año_cursado_posgrado",
-                    "multi__año_cursado_3er año",
-                    "multi__estudios_area_Otro",
-                    "multi__genero_Masculino",
-                    "num_bin__distancia_al_campus",
-                    "multi__estudios_area_Humanidades",
-                    "num_bin__calif_promedio",
-                    "multi__estudios_area_Ciencias",
-                    "multi__año_cursado_2do año",
-                    "multi__genero_Otro",
-                    "num_bin__extintor_incendios",
-                ],
-                "%Cambio_prima": [
-                    354.8370, 94.7330, 46.7106, 42.9091, 36.2409, 11.1749, 10.2217, 1.7919,
-                    0.4819, -2.8914, -2.9553, -5.3370, -12.7520, -17.4318, -46.2605,
-                ],
-            }
+            {"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__genero_No respuesta","multi__año_cursado_4to año","multi__año_cursado_posgrado","multi__año_cursado_3er año","multi__estudios_area_Otro","multi__genero_Masculino","num_bin__distancia_al_campus","multi__estudios_area_Humanidades","num_bin__calif_promedio","multi__estudios_area_Ciencias","multi__año_cursado_2do año","multi__genero_Otro","num_bin__extintor_incendios"],
+             "%Cambio_prima": [354.8370,94.7330,46.7106,42.9091,36.2409,11.1749,10.2217,1.7919,0.4819,-2.8914,-2.9553,-5.3370,-12.7520,-17.4318,-46.2605]}
         ),
         "Gastos_Medicos_RC_siniestros_monto": pd.DataFrame(
-            {
-                "Variable": [
-                    "num_bin__2_o_mas_inquilinos",
-                    "num_bin__en_campus",
-                    "multi__año_cursado_posgrado",
-                    "multi__año_cursado_3er año",
-                    "multi__estudios_area_Humanidades",
-                    "multi__genero_No respuesta",
-                    "multi__año_cursado_2do año",
-                    "num_bin__distancia_al_campus",
-                    "multi__año_cursado_4to año",
-                    "multi__genero_Otro",
-                    "multi__estudios_area_Otro",
-                    "num_bin__calif_promedio",
-                    "multi__estudios_area_Ciencias",
-                    "multi__genero_Masculino",
-                    "num_bin__extintor_incendios",
-                ],
-                "%Cambio_prima": [
-                    275.3948, 187.5584, 68.6651, 42.8082, 15.2331, 10.5232, 7.3051, 5.3001,
-                    1.7714, 0.8731, -4.1862, -7.7901, -13.3933, -18.6933, -47.4933,
-                ],
-            }
+            {"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__año_cursado_posgrado","multi__año_cursado_3er año","multi__estudios_area_Humanidades","multi__genero_No respuesta","multi__año_cursado_2do año","num_bin__distancia_al_campus","multi__año_cursado_4to año","multi__genero_Otro","multi__estudios_area_Otro","num_bin__calif_promedio","multi__estudios_area_Ciencias","multi__genero_Masculino","num_bin__extintor_incendios"],
+             "%Cambio_prima": [275.3948,187.5584,68.6651,42.8082,15.2331,10.5232,7.3051,5.3001,1.7714,0.8731,-4.1862,-7.7901,-13.3933,-18.6933,-47.4933]}
         ),
         "Resp_Civil_siniestros_monto": pd.DataFrame(
-            {
-                "Variable": [
-                    "num_bin__2_o_mas_inquilinos",
-                    "multi__año_cursado_posgrado",
-                    "num_bin__en_campus",
-                    "num_bin__distancia_al_campus",
-                    "num_bin__calif_promedio",
-                    "multi__estudios_area_Otro",
-                    "multi__año_cursado_3er año",
-                    "multi__genero_Masculino",
-                    "multi__estudios_area_Ciencias",
-                    "multi__año_cursado_4to año",
-                    "num_bin__extintor_incendios",
-                    "multi__genero_No respuesta",
-                    "multi__estudios_area_Humanidades",
-                    "multi__genero_Otro",
-                    "multi__año_cursado_2do año",
-                ],
-                "%Cambio_prima": [
-                    448.2017, 53.9895, 23.9554, 21.8542, 10.3560, 7.4916, -29.3219, -29.7620,
-                    -32.1020, -38.5175, -38.9797, -47.4722, -51.1230, -52.5578, -66.1921,
-                ],
-            }
+            {"Variable": ["num_bin__2_o_mas_inquilinos","multi__año_cursado_posgrado","num_bin__en_campus","num_bin__distancia_al_campus","num_bin__calif_promedio","multi__estudios_area_Otro","multi__año_cursado_3er año","multi__genero_Masculino","multi__estudios_area_Ciencias","multi__año_cursado_4to año","num_bin__extintor_incendios","multi__genero_No respuesta","multi__estudios_area_Humanidades","multi__genero_Otro","multi__año_cursado_2do año"],
+             "%Cambio_prima": [448.2017,53.9895,23.9554,21.8542,10.3560,7.4916,-29.3219,-29.7620,-32.1020,-38.5175,-38.9797,-47.4722,-51.1230,-52.5578,-66.1921]}
         ),
         "Contenidos_siniestros_monto": pd.DataFrame(
-            {
-                "Variable": [
-                    "num_bin__2_o_mas_inquilinos",
-                    "num_bin__en_campus",
-                    "multi__año_cursado_3er año",
-                    "multi__año_cursado_posgrado",
-                    "multi__genero_No respuesta",
-                    "multi__genero_Otro",
-                    "multi__genero_Masculino",
-                    "multi__año_cursado_2do año",
-                    "num_bin__distancia_al_campus",
-                    "num_bin__calif_promedio",
-                    "multi__año_cursado_4to año",
-                    "multi__estudios_area_Ciencias",
-                    "multi__estudios_area_Otro",
-                    "multi__estudios_area_Humanidades",
-                    "num_bin__extintor_incendios",
-                ],
-                "%Cambio_prima": [
-                    345.1322, 119.3666, 29.8415, 22.5027, 18.0567, 10.3456, 5.1074, 2.1588,
-                    -1.0780, -2.0532, -2.9586, -7.2140, -8.6788, -26.5477, -29.9581,
-                ],
-            }
+            {"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__año_cursado_3er año","multi__año_cursado_posgrado","multi__genero_No respuesta","multi__genero_Otro","multi__genero_Masculino","multi__año_cursado_2do año","num_bin__distancia_al_campus","num_bin__calif_promedio","multi__año_cursado_4to año","multi__estudios_area_Ciencias","multi__estudios_area_Otro","multi__estudios_area_Humanidades","num_bin__extintor_incendios"],
+             "%Cambio_prima": [345.1322,119.3666,29.8415,22.5027,18.0567,10.3456,5.1074,2.1588,-1.0780,-2.0532,-2.9586,-7.2140,-8.6788,-26.5477,-29.9581]}
         ),
     }
 
@@ -386,27 +311,6 @@ def kpi(label: str, value):
         unsafe_allow_html=True,
     )
 
-def render_small_table(df: pd.DataFrame, caption: str):
-    if df is None or df.empty:
-        st.caption(caption + " (sin datos)")
-        return
-    df2 = df.copy()
-    for col in df2.columns:
-        if "%" in col:
-            df2[col] = pd.to_numeric(df2[col], errors="coerce")
-    st.caption(caption)
-    st.dataframe(
-        df2,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
-            "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
-            "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
-            "Factor": st.column_config.NumberColumn("Factor", format="%.4f"),
-        },
-    )
-
 # ================================
 # APP
 # ================================
@@ -415,11 +319,11 @@ def main():
     st.markdown(EXECUTIVE_CSS, unsafe_allow_html=True)
 
     # Header ejecutivo con logo y título
-    hcol1, hcol2 = st.columns([1, 6])
-    with hcol1:
+    top_logo, top_title = st.columns([1, 6])
+    with top_logo:
         if LOGO_URL:
             st.image(LOGO_URL, width=72)
-    with hcol2:
+    with top_title:
         st.markdown("<h1 class='title-text'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
         st.markdown("<span style='color:#6b7280'>Frecuencia · Severidad · Prima esperada</span>", unsafe_allow_html=True)
 
@@ -435,22 +339,25 @@ def main():
     cambio_por_cobertura: Dict[str, pd.DataFrame] = data.get("cambio_por_cobertura", {})
     cambio_total: pd.DataFrame = data.get("cambio_total", pd.DataFrame())
 
-    # =====================
-    # LAYOUT SUPERIOR: selector (20%) | panel (80%)
-    # =====================
-    colL, colR = st.columns([1, 4], gap="large")
+    # ------------------------------------------------------------------
+    # FILA SUPERIOR (horizontal):
+    #   - Izquierda: selector "Cobertura"
+    #   - Derecha: "Métricas clave" (tarjetas)
+    # ------------------------------------------------------------------
+    row1_left, row1_right = st.columns([1.2, 3.8], gap="large")
 
-    with colL:
+    with row1_left:
         with st.container(border=True):
             st.markdown("### Cobertura")
             cobertura = st.selectbox(
                 "Selecciona cobertura",
                 COBERTURAS,
                 index=0,
+                label_visibility="collapsed",
                 format_func=lambda s: s.replace("_siniestros_monto", "").replace("_", " ")
             )
 
-    with colR:
+    with row1_right:
         with st.container(border=True):
             st.markdown("### Métricas clave")
             metrics = header_metrics.get(cobertura, {})
@@ -459,31 +366,6 @@ def main():
             with g2: kpi("Media predicha de N", metrics.get("Media predicha de N", np.nan))
             with g3: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan))
             with g4: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan))
-
-            st.markdown("---")
-            df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable", "%Cambio_prima"]))
-            if not df_cob.empty:
-                tabla_vars = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
-                if not tabla_vars.empty:
-                    tabla_vars["Factor"] = (pd.to_numeric(tabla_vars["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
-                    tabla_vars = tabla_vars.sort_values("Variable").reset_index(drop=True)
-                    tabla_vars = tabla_vars[["Variable", "Factor", "%Cambio_prima"]]
-                render_small_table(tabla_vars if 'tabla_vars' in locals() else df_cob, "Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
-            else:
-                render_small_table(pd.DataFrame(), "Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
-
-    # =====================
-    # LAYOUT SUPERIOR CENTRAL: tabla con 3 variables desde %Cambio_total
-    # =====================
-    with st.container(border=True):
-        st.markdown("### Impacto total ponderado por prima base (variables seleccionadas)")
-        if cambio_total is not None and not cambio_total.empty:
-            tabla_total = cambio_total[cambio_total["Variable"].isin(VARS_BIN)].copy()
-            if not tabla_total.empty:
-                tabla_total = tabla_total[["Variable", "Factor_total", "%Cambio_total"]].sort_values("Variable").reset_index(drop=True)
-            render_small_table(tabla_total if 'tabla_total' in locals() else cambio_total, "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
-        else:
-            render_small_table(pd.DataFrame(), "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
 
     # =====================
     # CARGA DEL EXCEL (SIEMPRE DESDE URL CONFIGURADA)
@@ -494,26 +376,66 @@ def main():
     except Exception as e:
         st.error(f"No se pudo leer el Excel desde GitHub RAW: {e}")
 
-    # =====================
-    # GRÁFICA POR COBERTURA
-    # =====================
     if df_all is not None:
         try:
             # Construir perfil y asignar niveles FIJOS
             df_all = build_perfil(df_all)
 
-            # Gráfica principal
-            with st.container(border=True):
-                st.markdown("### Mapa de riesgo por cobertura")
-                fig, df_sample = make_scatter_matplotlib(df_all, cobertura, sample_max=8000)
-                st.pyplot(fig, use_container_width=True)
+            # ------------------------------------------------------------------
+            # FILA MEDIA:
+            #   - Izquierda: Mapa de riesgo por cobertura (scatter con contorno blanco)
+            #   - Derecha: Barras (Cambio porcentual -> Factor) para VARS_BIN de la cobertura
+            # ------------------------------------------------------------------
+            row2_left, row2_right = st.columns([2.5, 2.0], gap="large")
 
-                st.download_button(
-                    label="⬇️ Descargar datos de la muestra graficada (CSV)",
-                    data=df_sample.to_csv(index=False).encode("utf-8"),
-                    file_name=f"muestra_mapa_riesgo_{cobertura}.csv",
-                    mime="text/csv"
-                )
+            with row2_left:
+                with st.container(border=True):
+                    st.markdown("### Mapa de riesgo por cobertura")
+                    fig_scatter, df_sample = make_scatter_matplotlib(df_all, cobertura, sample_max=8000)
+                    st.pyplot(fig_scatter, use_container_width=True)
+
+                    st.download_button(
+                        label="⬇️ Descargar datos de la muestra graficada (CSV)",
+                        data=df_sample.to_csv(index=False).encode("utf-8"),
+                        file_name=f"muestra_mapa_riesgo_{cobertura}.csv",
+                        mime="text/csv"
+                    )
+
+            with row2_right:
+                with st.container(border=True):
+                    st.markdown("### Cambio porcentual (selección) → Factor")
+                    df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable", "%Cambio_prima"])).copy()
+                    # Filtrar solo las variables seleccionadas
+                    df_sel = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
+                    if df_sel.empty:
+                        st.info("No hay datos de cambio por variable para esta cobertura.")
+                    else:
+                        # Calcular Factor = 1 + %Cambio_prima/100
+                        df_sel["Factor"] = (pd.to_numeric(df_sel["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
+                        df_sel = df_sel[["Variable", "Factor"]].sort_values("Variable").reset_index(drop=True)
+                        fig_bar_sel = plot_bars(df_sel, x_col="Variable", y_col="Factor",
+                                                title="Factor por variable (selección)", xtick_rotation=20)
+                        st.pyplot(fig_bar_sel, use_container_width=True)
+
+            # ------------------------------------------------------------------
+            # FILA INFERIOR (centro): Barras del Cambio total (Factor_total)
+            # ------------------------------------------------------------------
+            with st.container(border=True):
+                st.markdown("### Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
+                if cambio_total is None or cambio_total.empty:
+                    st.info("No hay datos de cambio total disponibles.")
+                else:
+                    df_total_sel = cambio_total.copy()
+                    # Si quieres solo VARS_BIN, descomenta la línea siguiente:
+                    df_total_sel = df_total_sel[df_total_sel["Variable"].isin(VARS_BIN)].copy()
+                    if df_total_sel.empty:
+                        st.info("No hay datos para las variables seleccionadas en el cambio total.")
+                    else:
+                        df_total_sel = df_total_sel[["Variable", "Factor_total"]].sort_values("Variable").reset_index(drop=True)
+                        fig_bar_total = plot_bars(df_total_sel, x_col="Variable", y_col="Factor_total",
+                                                  title="Factor total por variable (ponderado por prima base)", xtick_rotation=20)
+                        st.pyplot(fig_bar_total, use_container_width=True)
+
         except Exception as e:
             st.error(f"Error al preparar la visualización: {e}")
 
@@ -521,7 +443,7 @@ def main():
     st.markdown(f"""
     <div class="footer">
         © {datetime.now().year} Desarrollado con 
-        <a href="https://streamlit.io" target="_blank">Streamlit</a> ·💡Equipo Riskbusters - Universidad Nacional de Colombia
+        <a href="https://streamlit.io" target="_blank">Streamlit</a> · 💡Equipo Riskbusters - Universidad Nacional de Colombia
     </div>
     """, unsafe_allow_html=True)
 
