@@ -1,10 +1,10 @@
 # app.py
 # -------------------------------------------------------------
 # App Streamlit ejecutivo para métricas y coberturas
-# + mapas y barras (matplotlib) con Excel RAW de GitHub.
+# + mapas (scatter) y barras con Plotly (responsive).
 # -------------------------------------------------------------
 # Requisitos:
-#   pip install streamlit requests pandas numpy matplotlib openpyxl scipy
+#   pip install streamlit requests pandas numpy openpyxl scipy plotly
 # Ejecutar:  streamlit run app.py
 # -------------------------------------------------------------
 
@@ -20,8 +20,9 @@ import requests
 import streamlit as st
 from datetime import datetime
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+# === Plotly (gráficos responsivos y estables en primer render) ===
+import plotly.express as px
+import plotly.graph_objects as go
 
 # ================================
 # CONFIG
@@ -137,7 +138,7 @@ def build_perfil(df: pd.DataFrame) -> pd.DataFrame:
     df["nivel_riesgo"] = df["perfil_base"].map(RISK_MAP_FIXED).fillna("Medio")
     return df
 
-def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
+def ensure_pred_cols(df: pd.DataFrame, cobertura: str):
     col_freq = f"{cobertura}_freq_pred"
     col_sev  = f"{cobertura}_sev_pred"
     col_pri  = f"{cobertura}_prima_pred"
@@ -147,69 +148,67 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
     return col_freq, col_sev, col_pri
 
 # -------------------------------------------------------------
-# PLOTS (matplotlib) — uso de st.pyplot con tamaño forzado
+# PLOTS — Plotly (evita “miniaturas” en primer render)
 # -------------------------------------------------------------
-def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
-    """Scatter con contorno blanco y leyenda integrada."""
+def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000) -> go.Figure:
     col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
     df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
 
-    # Tamaños robustos
+    # normalizar tamaños (robusto)
     s = pd.to_numeric(df_plot[col_pri], errors="coerce").fillna(0).values
     s = np.clip(s, np.nanpercentile(s, 5), np.nanpercentile(s, 95))
-    s_norm = 40 + (s - s.min()) * (300 - 40) / (s.max() - s.min() + 1e-9)
-
-    colores = [COLOR_MAP.get(n, "#999999") for n in df_plot["nivel_riesgo"].values]
-
-    fig, ax = plt.subplots()
-    fig.set_dpi(160)
-    fig.set_size_inches(12.5, 6.8)   # << tamaño grande y estable
-
-    ax.scatter(
-        pd.to_numeric(df_plot[col_freq], errors="coerce"),
-        pd.to_numeric(df_plot[col_sev], errors="coerce"),
-        s=s_norm,
-        c=colores,
-        alpha=0.9,
-        edgecolors="white",
-        linewidths=0.6
-    )
+    # tamaño de marcador en px (Plotly usa tamaño en px, no área):
+    size_min, size_max = 6, 26
+    s_norm = size_min + (s - s.min()) * (size_max - size_min) / (s.max() - s.min() + 1e-9)
+    df_plot = df_plot.assign(_size_=s_norm)
 
     c_label = cobertura.replace("_siniestros_monto", "").replace("_", " ").capitalize()
-    ax.set_title(f"Mapa de riesgo – {c_label}", fontweight="bold", color="#003366")
-    ax.set_xlabel("Frecuencia esperada E[N]")
-    ax.set_ylabel("Severidad esperada E[Y | N>0]")
-    ax.grid(True, linestyle="--", alpha=0.35)
-    ax.set_facecolor("#FBFBFB")
 
-    # Leyenda interior (no comprime el canvas)
-    legend_patches = [mpatches.Patch(color=COLOR_MAP[n], label=n) for n in NIVELES_RIESGO]
-    ax.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper left",
-              frameon=True, fontsize=9, title_fontsize=10)
+    fig = px.scatter(
+        df_plot,
+        x=pd.to_numeric(df_plot[col_freq], errors="coerce"),
+        y=pd.to_numeric(df_plot[col_sev], errors="coerce"),
+        size="_size_",  # ya normalizado
+        color="nivel_riesgo",
+        color_discrete_map=COLOR_MAP,
+        hover_data={col_pri: ':.2f', col_freq: ':.3f', col_sev: ':.2f', "nivel_riesgo": True, "_size_": False},
+        title=f"Mapa de riesgo – {c_label}",
+    )
+    # contorno blanco
+    fig.update_traces(marker=dict(line=dict(width=1, color="white"), opacity=0.9), selector=dict(mode="markers"))
 
-    return fig, df_plot[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
-
-def plot_bars(df: pd.DataFrame, x_col: str, y_col: str, title: str,
-              xtick_rotation: int = 25, fig_size: Tuple[float, float]=(12.0, 6.0), dpi: int = 160):
-    """Barras con layout consistente (st.pyplot)."""
-    fig, ax = plt.subplots()
-    fig.set_dpi(dpi)
-    fig.set_size_inches(*fig_size)
-
-    x_vals = df[x_col].astype(str).tolist()
-    y_vals = pd.to_numeric(df[y_col], errors="coerce").fillna(0).tolist()
-
-    ax.bar(x_vals, y_vals)
-    ax.set_title(title, fontweight="bold", color="#003366")
-    ax.set_xlabel(x_col.replace("_", " "))
-    ax.set_ylabel(y_col.replace("_", " "))
-    ax.grid(axis="y", linestyle="--", alpha=0.35)
-    plt.setp(ax.get_xticklabels(), rotation=xtick_rotation, ha="right")
+    fig.update_layout(
+        height=460,
+        margin=dict(l=10, r=10, t=60, b=10),
+        legend_title_text="Nivel de riesgo",
+        plot_bgcolor="#FBFBFB",
+    )
+    fig.update_xaxes(title_text="Frecuencia esperada E[N]", gridcolor="rgba(0,0,0,0.15)", zeroline=False)
+    fig.update_yaxes(title_text="Severidad esperada E[Y | N>0]", gridcolor="rgba(0,0,0,0.15)", zeroline=False)
 
     return fig
 
+def bars_plotly(df: pd.DataFrame, x_col: str, y_col: str, title: str, height: int = 420) -> go.Figure:
+    fig = px.bar(
+        df,
+        x=x_col, y=y_col,
+        text=y_col,
+        title=title,
+    )
+    fig.update_traces(texttemplate="%{text:.4f}", textposition="outside", cliponaxis=False)
+    fig.update_layout(
+        height=height,
+        margin=dict(l=10, r=10, t=60, b=40),
+        xaxis_tickangle=20,
+        plot_bgcolor="#FBFBFB",
+        yaxis_title=y_col.replace("_", " "),
+        xaxis_title=x_col.replace("_", " "),
+    )
+    fig.update_yaxes(gridcolor="rgba(0,0,0,0.15)", zeroline=False)
+    return fig
+
 # -------------------------------------------------------------
-# Datos fallback
+# Datos fallback (métricas y tablas)
 # -------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def get_fallback_data() -> Dict[str, Any]:
@@ -353,11 +352,11 @@ def main():
             with g4: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan))
 
     # Excel
-    df_all = None
     try:
         df_all = read_excel_from_url(EXCEL_URL)
     except Exception as e:
         st.error(f"No se pudo leer el Excel desde GitHub RAW: {e}")
+        df_all = None
 
     if df_all is not None:
         try:
@@ -369,13 +368,15 @@ def main():
             with row2_left:
                 with st.container(border=True):
                     st.markdown("### Mapa de riesgo por cobertura")
-                    fig_scatter, df_sample = make_scatter_matplotlib(df_all, cobertura, sample_max=8000)
-                    st.pyplot(fig_scatter, use_container_width=True, clear_figure=True)
-                    plt.close(fig_scatter)
+                    fig_scatter = scatter_plotly(df_all, cobertura, sample_max=8000)
+                    st.plotly_chart(fig_scatter, use_container_width=True, config={"displayModeBar": False})
 
+                    # CSV de la muestra graficada
+                    col_freq, col_sev, col_pri = ensure_pred_cols(df_all, cobertura)
+                    df_plot = df_all[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
                     st.download_button(
                         label="⬇️ Descargar datos de la muestra graficada (CSV)",
-                        data=df_sample.to_csv(index=False).encode("utf-8"),
+                        data=df_plot.to_csv(index=False).encode("utf-8"),
                         file_name=f"muestra_mapa_riesgo_{cobertura}.csv",
                         mime="text/csv"
                     )
@@ -390,13 +391,9 @@ def main():
                     else:
                         df_sel["Factor"] = (pd.to_numeric(df_sel["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
                         df_sel = df_sel[["Variable", "Factor"]].sort_values("Variable").reset_index(drop=True)
-                        fig_bar_sel = plot_bars(
-                            df_sel, x_col="Variable", y_col="Factor",
-                            title="Factor por variable (selección)",
-                            xtick_rotation=20, fig_size=(11.5, 6.5), dpi=160
-                        )
-                        st.pyplot(fig_bar_sel, use_container_width=True, clear_figure=True)
-                        plt.close(fig_bar_sel)
+                        fig_bar_sel = bars_plotly(df_sel, x_col="Variable", y_col="Factor",
+                                                  title="Factor por variable (selección)", height=440)
+                        st.plotly_chart(fig_bar_sel, use_container_width=True, config={"displayModeBar": False})
 
             # FILA INFERIOR (más pequeña)
             with st.container(border=True):
@@ -405,18 +402,15 @@ def main():
                     st.info("No hay datos de cambio total disponibles.")
                 else:
                     df_total_sel = cambio_total.copy()
-                    df_total_sel = df_total_sel[df_total_sel["Variable"].isin(VARS_BIN)].copy()  # solo selección
+                    df_total_sel = df_total_sel[df_total_sel["Variable"].isin(VARS_BIN)].copy()
                     if df_total_sel.empty:
                         st.info("No hay datos para las variables seleccionadas en el cambio total.")
                     else:
                         df_total_sel = df_total_sel[["Variable", "Factor_total"]].sort_values("Variable").reset_index(drop=True)
-                        fig_bar_total = plot_bars(
-                            df_total_sel, x_col="Variable", y_col="Factor_total",
-                            title="Factor total por variable (ponderado por prima base)",
-                            xtick_rotation=20, fig_size=(10.5, 3.6), dpi=160
-                        )
-                        st.pyplot(fig_bar_total, use_container_width=True, clear_figure=True)
-                        plt.close(fig_bar_total)
+                        fig_bar_total = bars_plotly(df_total_sel, x_col="Variable", y_col="Factor_total",
+                                                    title="Factor total por variable (ponderado por prima base)",
+                                                    height=320)  # más pequeño
+                        st.plotly_chart(fig_bar_total, use_container_width=True, config={"displayModeBar": False})
 
         except Exception as e:
             st.error(f"Error al preparar la visualización: {e}")
