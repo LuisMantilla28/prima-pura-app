@@ -2,10 +2,10 @@
 # -------------------------------------------------------------
 # App Streamlit ejecutivo para métricas y coberturas
 # con opción de conectar un módulo .py remoto (GitHub RAW)
-# y visualizar el mapa de riesgo por cobertura desde un Excel único.
+# + gráfico de mapa de riesgo usando Excel único de GitHub.
 # -------------------------------------------------------------
 # Requisitos sugeridos:
-#   pip install streamlit requests pandas numpy seaborn matplotlib scipy openpyxl
+#   pip install streamlit requests pandas numpy matplotlib openpyxl scipy
 # Ejecutar:  streamlit run app.py
 # -------------------------------------------------------------
 
@@ -21,21 +21,19 @@ import requests
 import streamlit as st
 from datetime import datetime
 
-import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from scipy.cluster.hierarchy import linkage, fcluster
 
 # ================================
 # CONFIGURACIÓN
 # ================================
-REMOTE_PY_URL = os.getenv("REMOTE_PY_URL", "")  # módulo remoto RAW
+REMOTE_PY_URL = os.getenv("REMOTE_PY_URL", "")  # módulo remoto RAW (opcional)
 REMOTE_MODULE_NAME = "modelo_remoto"
 
 LOGO_URL = os.getenv("LOGO_URL", "")
 
-# URL RAW del Excel único (opcional). También podrás pegarla en el sidebar o subir archivo.
-DEFAULT_EXCEL_URL = os.getenv("EXCEL_URL", "")
+# Excel ÚNICO SIEMPRE desde GitHub RAW (puedes cambiar por variable de entorno si quieres)
+EXCEL_URL = "https://raw.githubusercontent.com/LuisMantilla28/prima-pura-app/main/predicciones_train_test_una_hoja.xlsx"
 
 # 3) Nombres canónicos de coberturas (deben coincidir con las claves de los datos)
 COBERTURAS = [
@@ -92,6 +90,18 @@ COLOR_MAP = {
     "Alto": "#C0392B",
 }
 
+# Mapeo FIJO de combinación binaria → nivel de riesgo (según tu tabla)
+RISK_MAP_FIXED = {
+    "0_0_1": "Bajo",
+    "0_0_0": "Bajo",
+    "0_1_1": "Medio-bajo",
+    "1_0_1": "Medio-bajo",
+    "0_1_0": "Medio",
+    "1_0_0": "Medio",
+    "1_1_1": "Medio-alto",
+    "1_1_0": "Alto",
+}
+
 # -------------------------------------------------------------
 # Utilidad: cargar un .py remoto (raw GitHub) y convertirlo en módulo importable
 # -------------------------------------------------------------
@@ -117,17 +127,13 @@ def load_remote_module(raw_url: str, module_name: str):
         return None
 
 # -------------------------------------------------------------
-# Lectura del Excel único (desde URL o upload)
+# Lectura del Excel único (desde URL)
 # -------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def read_excel_from_url(url: str) -> pd.DataFrame:
-    resp = requests.get(url, timeout=30)
+    resp = requests.get(url, timeout=45)
     resp.raise_for_status()
     return pd.read_excel(io.BytesIO(resp.content))
-
-@st.cache_data(show_spinner=False)
-def read_excel_from_upload(uploaded_file) -> pd.DataFrame:
-    return pd.read_excel(uploaded_file)
 
 def build_perfil(df: pd.DataFrame) -> pd.DataFrame:
     """Crea 'perfil_base' a partir de 2_o_mas_inquilinos, en_campus, extintor_incendios (normaliza a 0/1)."""
@@ -141,22 +147,9 @@ def build_perfil(df: pd.DataFrame) -> pd.DataFrame:
         df["en_campus"].astype(str) + "_" +
         df["extintor_incendios"].astype(str)
     )
+    # Asignación FIJA de nivel_riesgo; combos no contemplados → "Medio" (neutral)
+    df["nivel_riesgo"] = df["perfil_base"].map(RISK_MAP_FIXED).fillna("Medio")
     return df
-
-def compute_risk_levels(df: pd.DataFrame, n_clusters: int = 5) -> pd.DataFrame:
-    """Clustering Ward sobre la prima promedio para etiquetar niveles de riesgo."""
-    if "Prima_total_pred" not in df.columns:
-        raise ValueError("No se encontró 'Prima_total_pred' en el Excel.")
-    resumen = df.groupby("perfil_base").agg(
-        prima_promedio=("Prima_total_pred", "mean"),
-        n=("Prima_total_pred", "count")
-    ).reset_index()
-    Z = linkage(resumen[["prima_promedio"]], method="ward")
-    resumen["cluster"] = fcluster(Z, t=n_clusters, criterion="maxclust")
-    orden = resumen.groupby("cluster")["prima_promedio"].mean().sort_values().index
-    mapa_niveles = {cl: NIVELES_RIESGO[i] for i, cl in enumerate(orden)}
-    resumen["nivel_riesgo"] = resumen["cluster"].map(mapa_niveles)
-    return resumen[["perfil_base", "nivel_riesgo"]]
 
 def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
     col_freq = f"{cobertura}_freq_pred"
@@ -167,29 +160,29 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
             raise ValueError(f"Falta la columna '{c}' para la cobertura '{cobertura}'.")
     return col_freq, col_sev, col_pri
 
-def make_scatter(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
-    """Dibuja scatter E[N] vs E[Y|N>0] para la cobertura seleccionada; tamaño ~ prima, color por nivel de riesgo."""
+def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
+    """Scatter E[N] vs E[Y|N>0] (matplotlib puro) con tamaño ~ prima y color por nivel_riesgo."""
     col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
-
-    # Muestra para render más fluido
     df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
 
-    sns.set(style="whitegrid")
-    plt.rcParams.update({"figure.dpi": 120, "font.size": 11, "axes.titlesize": 14, "axes.labelsize": 11})
+    # Tamaños robustos
+    s = pd.to_numeric(df_plot[col_pri], errors="coerce").fillna(0).values
+    s = np.clip(s, np.nanpercentile(s, 5), np.nanpercentile(s, 95))
+    s_norm = 40 + (s - s.min()) * (300 - 40) / (s.max() - s.min() + 1e-9)
 
+    colores = [COLOR_MAP.get(n, "#999999") for n in df_plot["nivel_riesgo"].values]
+
+    plt.rcParams.update({"figure.dpi": 120, "font.size": 11, "axes.titlesize": 14, "axes.labelsize": 11})
     fig, ax = plt.subplots(figsize=(9, 6))
-    import seaborn as sns
-    sns.scatterplot(
-        data=df_plot,
-        x=col_freq, y=col_sev,
-        hue="nivel_riesgo",
-        size=col_pri,
-        sizes=(40, 300),
+    ax.scatter(
+        pd.to_numeric(df_plot[col_freq], errors="coerce"),
+        pd.to_numeric(df_plot[col_sev], errors="coerce"),
+        s=s_norm,
+        c=colores,
         alpha=0.85,
-        palette=COLOR_MAP,
-        ax=ax,
-        legend=False
+        edgecolors="none"
     )
+
     c_label = cobertura.replace("_siniestros_monto", "").replace("_", " ").capitalize()
     ax.set_title(f"Mapa de riesgo – {c_label}", fontweight="bold", color="#003366")
     ax.set_xlabel("Frecuencia esperada E[N]")
@@ -197,9 +190,10 @@ def make_scatter(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
     ax.grid(True, linestyle="--", alpha=0.35)
     ax.set_facecolor("#FBFBFB")
 
-    # Leyenda única
+    # Leyenda manual
     legend_patches = [mpatches.Patch(color=COLOR_MAP[n], label=n) for n in NIVELES_RIESGO]
-    fig.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper right", frameon=True, fontsize=10, title_fontsize=11)
+    fig.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper right",
+               frameon=True, fontsize=10, title_fontsize=11)
 
     plt.tight_layout()
     return fig, df_plot[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
@@ -393,6 +387,9 @@ def kpi(label: str, value):
     )
 
 def render_small_table(df: pd.DataFrame, caption: str):
+    if df is None or df.empty:
+        st.caption(caption + " (sin datos)")
+        return
     df2 = df.copy()
     for col in df2.columns:
         if "%" in col:
@@ -426,20 +423,6 @@ def main():
         st.markdown("<h1 class='title-text'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
         st.markdown("<span style='color:#6b7280'>Frecuencia · Severidad · Prima esperada</span>", unsafe_allow_html=True)
 
-    # Sidebar: fuente del Excel y parámetros de clustering
-    with st.sidebar:
-        st.header("Fuente de datos (Excel único)")
-        excel_url = st.text_input(
-            "URL RAW de GitHub (XLSX)",
-            value=DEFAULT_EXCEL_URL,
-            placeholder="https://raw.githubusercontent.com/usuario/repo/rama/predicciones_train_test_una_hoja.xlsx"
-        )
-        st.markdown("<div style='text-align:center;'>— ó —</div>", unsafe_allow_html=True)
-        uploaded = st.file_uploader("Subir Excel (XLSX)", type=["xlsx"])
-        st.markdown("---")
-        st.caption("Parámetros de clustering")
-        n_clusters = st.slider("Número de niveles de riesgo", min_value=3, max_value=7, value=5, step=1)
-
     # Cargar módulo remoto si se configuró REMOTE_PY_URL
     mod = load_remote_module(REMOTE_PY_URL, REMOTE_MODULE_NAME)
 
@@ -449,8 +432,8 @@ def main():
         data = get_fallback_data()
 
     header_metrics: Dict[str, Dict[str, float]] = data["header_metrics"]
-    cambio_por_cobertura: Dict[str, pd.DataFrame] = data["cambio_por_cobertura"]
-    cambio_total: pd.DataFrame = data["cambio_total"]
+    cambio_por_cobertura: Dict[str, pd.DataFrame] = data.get("cambio_por_cobertura", {})
+    cambio_total: pd.DataFrame = data.get("cambio_total", pd.DataFrame())
 
     # =====================
     # LAYOUT SUPERIOR: selector (20%) | panel (80%)
@@ -479,53 +462,50 @@ def main():
 
             st.markdown("---")
             df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable", "%Cambio_prima"]))
-            tabla_vars = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
-            tabla_vars["Factor"] = (pd.to_numeric(tabla_vars["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
-            tabla_vars = tabla_vars.sort_values("Variable").reset_index(drop=True)
-            tabla_vars = tabla_vars[["Variable", "Factor", "%Cambio_prima"]]
-            render_small_table(tabla_vars,"Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
+            if not df_cob.empty:
+                tabla_vars = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
+                if not tabla_vars.empty:
+                    tabla_vars["Factor"] = (pd.to_numeric(tabla_vars["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
+                    tabla_vars = tabla_vars.sort_values("Variable").reset_index(drop=True)
+                    tabla_vars = tabla_vars[["Variable", "Factor", "%Cambio_prima"]]
+                render_small_table(tabla_vars if 'tabla_vars' in locals() else df_cob, "Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
+            else:
+                render_small_table(pd.DataFrame(), "Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
 
     # =====================
     # LAYOUT SUPERIOR CENTRAL: tabla con 3 variables desde %Cambio_total
     # =====================
     with st.container(border=True):
         st.markdown("### Impacto total ponderado por prima base (variables seleccionadas)")
-        tabla_total = cambio_total[cambio_total["Variable"].isin(VARS_BIN)].copy()
-        tabla_total = tabla_total[["Variable", "Factor_total", "%Cambio_total"]].sort_values("Variable").reset_index(drop=True)
-        render_small_table(tabla_total, "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
+        if cambio_total is not None and not cambio_total.empty:
+            tabla_total = cambio_total[cambio_total["Variable"].isin(VARS_BIN)].copy()
+            if not tabla_total.empty:
+                tabla_total = tabla_total[["Variable", "Factor_total", "%Cambio_total"]].sort_values("Variable").reset_index(drop=True)
+            render_small_table(tabla_total if 'tabla_total' in locals() else cambio_total, "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
+        else:
+            render_small_table(pd.DataFrame(), "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
 
     # =====================
-    # CARGA DEL EXCEL Y GRÁFICA POR COBERTURA
+    # CARGA DEL EXCEL (SIEMPRE DESDE URL CONFIGURADA)
     # =====================
     df_all = None
-    error_msg = None
-    if excel_url:
-        try:
-            df_all = read_excel_from_url(excel_url)
-        except Exception as e:
-            error_msg = f"No se pudo leer el Excel desde URL: {e}"
-    elif uploaded is not None:
-        try:
-            df_all = read_excel_from_upload(uploaded)
-        except Exception as e:
-            error_msg = f"No se pudo leer el Excel subido: {e}"
-    else:
-        st.info("💡 Para ver el mapa de riesgo por cobertura, ingresa la **URL RAW** del Excel o **sube** el archivo en el sidebar.")
+    try:
+        df_all = read_excel_from_url(EXCEL_URL)
+    except Exception as e:
+        st.error(f"No se pudo leer el Excel desde GitHub RAW: {e}")
 
-    if error_msg:
-        st.error(error_msg)
-
+    # =====================
+    # GRÁFICA POR COBERTURA
+    # =====================
     if df_all is not None:
         try:
-            # Construir perfil y niveles de riesgo
+            # Construir perfil y asignar niveles FIJOS
             df_all = build_perfil(df_all)
-            df_niv = compute_risk_levels(df_all, n_clusters=n_clusters)
-            df_all = df_all.merge(df_niv, on="perfil_base", how="left")
 
             # Gráfica principal
             with st.container(border=True):
                 st.markdown("### Mapa de riesgo por cobertura")
-                fig, df_sample = make_scatter(df_all, cobertura, sample_max=8000)
+                fig, df_sample = make_scatter_matplotlib(df_all, cobertura, sample_max=8000)
                 st.pyplot(fig, use_container_width=True)
 
                 st.download_button(
