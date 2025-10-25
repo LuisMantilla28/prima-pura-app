@@ -55,7 +55,7 @@ html, body, [class*="css"], .stMarkdown, .stText, .stDataFrame {
 .block-container { padding-top: 0.9rem; padding-bottom: 1.0rem; }
 h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
 
-/* KPI más compactos (misma altura visual que el bloque "Cobertura") */
+/* KPI compactos (misma altura que "Cobertura") */
 .kpi-card {
   background: #1E3A8A; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px;
   padding: 10px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); color:#fff; margin: 0;
@@ -66,26 +66,6 @@ h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
 h3, h4 { margin: 0.2rem 0 0.6rem 0; }
 .caption { color: #6b7280 !important; text-transform: uppercase; letter-spacing: .03em; font-size: .78rem; }
 .footer { margin-top: 0.6rem; color:#6b7280; }
-
-/* ====== Forzar tamaño visible de imágenes (evita miniaturas) ====== */
-.plot-lg img {
-  width: 100% !important;
-  height: auto !important;
-  min-height: 480px;   /* alto mínimo confortable para el scatter */
-  display: block;
-}
-.plot-md img {
-  width: 100% !important;
-  height: auto !important;
-  min-height: 420px;   /* barras selección */
-  display: block;
-}
-.plot-sm img {
-  width: 100% !important;
-  height: auto !important;
-  min-height: 280px;   /* barras inferiores más pequeña */
-  display: block;
-}
 </style>
 """
 
@@ -167,42 +147,10 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
     return col_freq, col_sev, col_pri
 
 # -------------------------------------------------------------
-# Helper para mostrar figuras: PNG grande (evita "miniaturas")
-# -------------------------------------------------------------
-def fig_to_stimage(fig, *, width_px: int = 1600, height_px: int | None = None, dpi: int = 200):
-    """
-    Renderiza un fig de matplotlib a un PNG grande y lo muestra con st.image.
-    Si no pasas height_px, se respeta la relación de aspecto actual del fig.
-    """
-    if height_px is None:
-        w_in, h_in = fig.get_size_inches()
-        aspect = h_in / max(w_in, 1e-9)
-        height_px = int(width_px * aspect)
-
-    # Ajustar tamaño físico del fig para producir exactamente esos píxeles
-    fig.set_size_inches(width_px / dpi, height_px / dpi, forward=True)
-
-    buf = io.BytesIO()
-    # Importante: NO usar bbox_inches="tight" (encoge la imagen inicial)
-    fig.savefig(buf, format="png", dpi=dpi, bbox_inches=None, pad_inches=0.1)
-    buf.seek(0)
-    st.image(buf, use_container_width=True)
-
-def show_fig(fig, size: str = "lg", *, width_px: int, height_px: int, dpi: int = 200):
-    """
-    Envuelve la imagen en un div con clase de tamaño (CSS) y la renderiza grande.
-    size ∈ {"lg", "md", "sm"}
-    """
-    cls = {"lg": "plot-lg", "md": "plot-md", "sm": "plot-sm"}.get(size, "plot-lg")
-    st.markdown(f"<div class='{cls}'>", unsafe_allow_html=True)
-    fig_to_stimage(fig, width_px=width_px, height_px=height_px, dpi=dpi)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# -------------------------------------------------------------
-# PLOTS (matplotlib)
+# PLOTS (matplotlib) — uso de st.pyplot con tamaño forzado
 # -------------------------------------------------------------
 def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
-    """Scatter con contorno blanco y leyenda integrada (render estable)."""
+    """Scatter con contorno blanco y leyenda integrada."""
     col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
     df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
 
@@ -213,7 +161,10 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
 
     colores = [COLOR_MAP.get(n, "#999999") for n in df_plot["nivel_riesgo"].values]
 
-    fig, ax = plt.subplots(figsize=(11.5, 6.6))  # tamaño de trabajo (se recalibra al exportar)
+    fig, ax = plt.subplots()
+    fig.set_dpi(160)
+    fig.set_size_inches(12.5, 6.8)   # << tamaño grande y estable
+
     ax.scatter(
         pd.to_numeric(df_plot[col_freq], errors="coerce"),
         pd.to_numeric(df_plot[col_sev], errors="coerce"),
@@ -231,7 +182,7 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
     ax.grid(True, linestyle="--", alpha=0.35)
     ax.set_facecolor("#FBFBFB")
 
-    # Leyenda interior (evita comprimir canvas general)
+    # Leyenda interior (no comprime el canvas)
     legend_patches = [mpatches.Patch(color=COLOR_MAP[n], label=n) for n in NIVELES_RIESGO]
     ax.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper left",
               frameon=True, fontsize=9, title_fontsize=10)
@@ -239,9 +190,12 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
     return fig, df_plot[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
 
 def plot_bars(df: pd.DataFrame, x_col: str, y_col: str, title: str,
-              xtick_rotation: int = 25, width: Tuple[float, float]=(11.0, 6.2)):
-    """Barras con layout consistente y ejes legibles (render como imagen)."""
-    fig, ax = plt.subplots(figsize=width)
+              xtick_rotation: int = 25, fig_size: Tuple[float, float]=(12.0, 6.0), dpi: int = 160):
+    """Barras con layout consistente (st.pyplot)."""
+    fig, ax = plt.subplots()
+    fig.set_dpi(dpi)
+    fig.set_size_inches(*fig_size)
+
     x_vals = df[x_col].astype(str).tolist()
     y_vals = pd.to_numeric(df[y_col], errors="coerce").fillna(0).tolist()
 
@@ -416,7 +370,7 @@ def main():
                 with st.container(border=True):
                     st.markdown("### Mapa de riesgo por cobertura")
                     fig_scatter, df_sample = make_scatter_matplotlib(df_all, cobertura, sample_max=8000)
-                    show_fig(fig_scatter, size="lg", width_px=1600, height_px=900, dpi=200)   # 👈 robusto
+                    st.pyplot(fig_scatter, use_container_width=True, clear_figure=True)
                     plt.close(fig_scatter)
 
                     st.download_button(
@@ -439,9 +393,9 @@ def main():
                         fig_bar_sel = plot_bars(
                             df_sel, x_col="Variable", y_col="Factor",
                             title="Factor por variable (selección)",
-                            xtick_rotation=20, width=(11.0, 6.2)
+                            xtick_rotation=20, fig_size=(11.5, 6.5), dpi=160
                         )
-                        show_fig(fig_bar_sel, size="md", width_px=1400, height_px=760, dpi=200)  # 👈 robusto
+                        st.pyplot(fig_bar_sel, use_container_width=True, clear_figure=True)
                         plt.close(fig_bar_sel)
 
             # FILA INFERIOR (más pequeña)
@@ -459,9 +413,9 @@ def main():
                         fig_bar_total = plot_bars(
                             df_total_sel, x_col="Variable", y_col="Factor_total",
                             title="Factor total por variable (ponderado por prima base)",
-                            xtick_rotation=20, width=(10.0, 3.6)
+                            xtick_rotation=20, fig_size=(10.5, 3.6), dpi=160
                         )
-                        show_fig(fig_bar_total, size="sm", width_px=1200, height_px=430, dpi=200)  # 👈 robusto
+                        st.pyplot(fig_bar_total, use_container_width=True, clear_figure=True)
                         plt.close(fig_bar_total)
 
         except Exception as e:
