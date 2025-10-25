@@ -396,7 +396,7 @@ if st.button("🔢 Calcular prima pura"):
             nivel_riesgo = "Medio-bajo"
             factores = [
                 "🏠 Vive <b>fuera del campus</b>.",
-                "👤 No comparte con otros inquilinos.",,
+                "👤 No comparte con otros inquilinos.",
                 "🧯 Cuenta con <b>extintor</b>."
             ]
        elif (inq == 1 and camp == 0 and ext == 1):
