@@ -154,7 +154,9 @@ def fig_to_stimage(fig, *, dpi: int = 220):
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
     buf.seek(0)
-    st.image(buf, use_column_width=True)
+    # ✅ usar el parámetro vigente:
+    st.image(buf, use_container_width=True)
+
 
 # -------------------------------------------------------------
 # PLOTS (matplotlib)
