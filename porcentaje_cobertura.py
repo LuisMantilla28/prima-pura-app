@@ -2,9 +2,10 @@
 # -------------------------------------------------------------
 # App Streamlit ejecutivo para métricas y coberturas
 # con opción de conectar un módulo .py remoto (GitHub RAW)
+# y visualizar el mapa de riesgo por cobertura desde un Excel único.
 # -------------------------------------------------------------
 # Requisitos sugeridos:
-#   pip install streamlit requests pandas numpy
+#   pip install streamlit requests pandas numpy seaborn matplotlib scipy openpyxl
 # Ejecutar:  streamlit run app.py
 # -------------------------------------------------------------
 
@@ -12,7 +13,7 @@ import io
 import os
 import sys
 import tempfile
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -20,16 +21,21 @@ import requests
 import streamlit as st
 from datetime import datetime
 
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from scipy.cluster.hierarchy import linkage, fcluster
+
 # ================================
 # CONFIGURACIÓN
 # ================================
-# 1) URL del .py crudo en GitHub (raw). Cambia esta constante a tu enlace RAW.
-#    Ejemplo: "https://raw.githubusercontent.com/usuario/repositorio/rama/carpeta/modulo_modelo.py"
-REMOTE_PY_URL = os.getenv("REMOTE_PY_URL", "")  # <-- pon la URL RAW aquí o via variable de entorno
-REMOTE_MODULE_NAME = "modelo_remoto"            # nombre interno con el que importaremos el módulo
+REMOTE_PY_URL = os.getenv("REMOTE_PY_URL", "")  # módulo remoto RAW
+REMOTE_MODULE_NAME = "modelo_remoto"
 
-# 2) Logo opcional de tu organización para el header (URL pública). Deja vacío para ocultar.
 LOGO_URL = os.getenv("LOGO_URL", "")
+
+# URL RAW del Excel único (opcional). También podrás pegarla en el sidebar o subir archivo.
+DEFAULT_EXCEL_URL = os.getenv("EXCEL_URL", "")
 
 # 3) Nombres canónicos de coberturas (deben coincidir con las claves de los datos)
 COBERTURAS = [
@@ -61,7 +67,9 @@ html, body, [class*="css"], .stMarkdown, .stText, .stDataFrame { font-family: In
 h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
 
 /***** KPI cards (métricas) *****/
-.kpi-card { background: #1E3A8A; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); } .kpi-card .metric-label { font-size: 0.85rem; margin-bottom: 6px; } .kpi-card .metric-value { font-size: 1.35rem; font-weight: 700;
+.kpi-card { background: #1E3A8A; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); color:#fff; }
+.kpi-card .metric-label { font-size: 0.85rem; margin-bottom: 6px; opacity:0.9; }
+.kpi-card .metric-value { font-size: 1.35rem; font-weight: 700; }
 
 /***** Tablas *****/
 caption { color: #6b7280 !important; text-transform: uppercase; letter-spacing: .03em; font-size: .78rem; }
@@ -69,17 +77,27 @@ caption { color: #6b7280 !important; text-transform: uppercase; letter-spacing: 
 /***** Selector pegable (sticky) *****/
 .sticky { position: sticky; top: 0.5rem; z-index: 999; }
 
+/***** Footer *****/
+.footer { margin-top: 1rem; color:#6b7280; }
 </style>
 """
+
+# Paleta niveles de riesgo
+NIVELES_RIESGO = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
+COLOR_MAP = {
+    "Bajo": "#2E8B57",
+    "Medio-bajo": "#F2C94C",
+    "Medio": "#F5A623",
+    "Medio-alto": "#D35400",
+    "Alto": "#C0392B",
+}
 
 # -------------------------------------------------------------
 # Utilidad: cargar un .py remoto (raw GitHub) y convertirlo en módulo importable
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
 def load_remote_module(raw_url: str, module_name: str):
-    """Descarga un .py desde raw_url y lo importa como módulo con nombre module_name.
-    Retorna el módulo o None si no fue posible cargarlo.
-    """
+    """Descarga un .py desde raw_url y lo importa como módulo con nombre module_name."""
     if not raw_url:
         return None
     try:
@@ -97,6 +115,94 @@ def load_remote_module(raw_url: str, module_name: str):
     except Exception as e:
         st.warning(f"No se pudo cargar el módulo remoto: {e}")
         return None
+
+# -------------------------------------------------------------
+# Lectura del Excel único (desde URL o upload)
+# -------------------------------------------------------------
+@st.cache_data(show_spinner=False)
+def read_excel_from_url(url: str) -> pd.DataFrame:
+    resp = requests.get(url, timeout=30)
+    resp.raise_for_status()
+    return pd.read_excel(io.BytesIO(resp.content))
+
+@st.cache_data(show_spinner=False)
+def read_excel_from_upload(uploaded_file) -> pd.DataFrame:
+    return pd.read_excel(uploaded_file)
+
+def build_perfil(df: pd.DataFrame) -> pd.DataFrame:
+    """Crea 'perfil_base' a partir de 2_o_mas_inquilinos, en_campus, extintor_incendios (normaliza a 0/1)."""
+    df = df.copy()
+    for c in ["2_o_mas_inquilinos", "en_campus", "extintor_incendios"]:
+        if c not in df.columns:
+            raise ValueError(f"Falta la columna '{c}' en el Excel.")
+        df[c] = df[c].apply(lambda x: 1 if str(x).strip().lower() in {"1","si","sí","true","y","s"} else 0)
+    df["perfil_base"] = (
+        df["2_o_mas_inquilinos"].astype(str) + "_" +
+        df["en_campus"].astype(str) + "_" +
+        df["extintor_incendios"].astype(str)
+    )
+    return df
+
+def compute_risk_levels(df: pd.DataFrame, n_clusters: int = 5) -> pd.DataFrame:
+    """Clustering Ward sobre la prima promedio para etiquetar niveles de riesgo."""
+    if "Prima_total_pred" not in df.columns:
+        raise ValueError("No se encontró 'Prima_total_pred' en el Excel.")
+    resumen = df.groupby("perfil_base").agg(
+        prima_promedio=("Prima_total_pred", "mean"),
+        n=("Prima_total_pred", "count")
+    ).reset_index()
+    Z = linkage(resumen[["prima_promedio"]], method="ward")
+    resumen["cluster"] = fcluster(Z, t=n_clusters, criterion="maxclust")
+    orden = resumen.groupby("cluster")["prima_promedio"].mean().sort_values().index
+    mapa_niveles = {cl: NIVELES_RIESGO[i] for i, cl in enumerate(orden)}
+    resumen["nivel_riesgo"] = resumen["cluster"].map(mapa_niveles)
+    return resumen[["perfil_base", "nivel_riesgo"]]
+
+def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
+    col_freq = f"{cobertura}_freq_pred"
+    col_sev  = f"{cobertura}_sev_pred"
+    col_pri  = f"{cobertura}_prima_pred"
+    for c in [col_freq, col_sev, col_pri]:
+        if c not in df.columns:
+            raise ValueError(f"Falta la columna '{c}' para la cobertura '{cobertura}'.")
+    return col_freq, col_sev, col_pri
+
+def make_scatter(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
+    """Dibuja scatter E[N] vs E[Y|N>0] para la cobertura seleccionada; tamaño ~ prima, color por nivel de riesgo."""
+    col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
+
+    # Muestra para render más fluido
+    df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
+
+    sns.set(style="whitegrid")
+    plt.rcParams.update({"figure.dpi": 120, "font.size": 11, "axes.titlesize": 14, "axes.labelsize": 11})
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    import seaborn as sns
+    sns.scatterplot(
+        data=df_plot,
+        x=col_freq, y=col_sev,
+        hue="nivel_riesgo",
+        size=col_pri,
+        sizes=(40, 300),
+        alpha=0.85,
+        palette=COLOR_MAP,
+        ax=ax,
+        legend=False
+    )
+    c_label = cobertura.replace("_siniestros_monto", "").replace("_", " ").capitalize()
+    ax.set_title(f"Mapa de riesgo – {c_label}", fontweight="bold", color="#003366")
+    ax.set_xlabel("Frecuencia esperada E[N]")
+    ax.set_ylabel("Severidad esperada E[Y | N>0]")
+    ax.grid(True, linestyle="--", alpha=0.35)
+    ax.set_facecolor("#FBFBFB")
+
+    # Leyenda única
+    legend_patches = [mpatches.Patch(color=COLOR_MAP[n], label=n) for n in NIVELES_RIESGO]
+    fig.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper right", frameon=True, fontsize=10, title_fontsize=11)
+
+    plt.tight_layout()
+    return fig, df_plot[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
 
 # -------------------------------------------------------------
 # Fallback de datos (del mensaje del usuario) en caso de que el módulo remoto no provea funciones
@@ -130,6 +236,7 @@ def get_fallback_data() -> Dict[str, Any]:
         },
     }
 
+    # (… tus tablas de cambio por cobertura y total, tal como ya estaban …)
     cambio_por_cobertura = {
         "Gastos_Adicionales_siniestros_monto": pd.DataFrame(
             {
@@ -151,21 +258,8 @@ def get_fallback_data() -> Dict[str, Any]:
                     "num_bin__extintor_incendios",
                 ],
                 "%Cambio_prima": [
-                    354.8370,
-                    94.7330,
-                    46.7106,
-                    42.9091,
-                    36.2409,
-                    11.1749,
-                    10.2217,
-                    1.7919,
-                    0.4819,
-                    -2.8914,
-                    -2.9553,
-                    -5.3370,
-                    -12.7520,
-                    -17.4318,
-                    -46.2605,
+                    354.8370, 94.7330, 46.7106, 42.9091, 36.2409, 11.1749, 10.2217, 1.7919,
+                    0.4819, -2.8914, -2.9553, -5.3370, -12.7520, -17.4318, -46.2605,
                 ],
             }
         ),
@@ -189,21 +283,8 @@ def get_fallback_data() -> Dict[str, Any]:
                     "num_bin__extintor_incendios",
                 ],
                 "%Cambio_prima": [
-                    275.3948,
-                    187.5584,
-                    68.6651,
-                    42.8082,
-                    15.2331,
-                    10.5232,
-                    7.3051,
-                    5.3001,
-                    1.7714,
-                    0.8731,
-                    -4.1862,
-                    -7.7901,
-                    -13.3933,
-                    -18.6933,
-                    -47.4933,
+                    275.3948, 187.5584, 68.6651, 42.8082, 15.2331, 10.5232, 7.3051, 5.3001,
+                    1.7714, 0.8731, -4.1862, -7.7901, -13.3933, -18.6933, -47.4933,
                 ],
             }
         ),
@@ -227,21 +308,8 @@ def get_fallback_data() -> Dict[str, Any]:
                     "multi__año_cursado_2do año",
                 ],
                 "%Cambio_prima": [
-                    448.2017,
-                    53.9895,
-                    23.9554,
-                    21.8542,
-                    10.3560,
-                    7.4916,
-                    -29.3219,
-                    -29.7620,
-                    -32.1020,
-                    -38.5175,
-                    -38.9797,
-                    -47.4722,
-                    -51.1230,
-                    -52.5578,
-                    -66.1921,
+                    448.2017, 53.9895, 23.9554, 21.8542, 10.3560, 7.4916, -29.3219, -29.7620,
+                    -32.1020, -38.5175, -38.9797, -47.4722, -51.1230, -52.5578, -66.1921,
                 ],
             }
         ),
@@ -265,21 +333,8 @@ def get_fallback_data() -> Dict[str, Any]:
                     "num_bin__extintor_incendios",
                 ],
                 "%Cambio_prima": [
-                    345.1322,
-                    119.3666,
-                    29.8415,
-                    22.5027,
-                    18.0567,
-                    10.3456,
-                    5.1074,
-                    2.1588,
-                    -1.0780,
-                    -2.0532,
-                    -2.9586,
-                    -7.2140,
-                    -8.6788,
-                    -26.5477,
-                    -29.9581,
+                    345.1322, 119.3666, 29.8415, 22.5027, 18.0567, 10.3456, 5.1074, 2.1588,
+                    -1.0780, -2.0532, -2.9586, -7.2140, -8.6788, -26.5477, -29.9581,
                 ],
             }
         ),
@@ -288,56 +343,14 @@ def get_fallback_data() -> Dict[str, Any]:
     cambio_total = pd.DataFrame(
         {
             "Variable": [
-                "num_bin__2_o_mas_inquilinos",
-                "num_bin__en_campus",
-                "multi__año_cursado_posgrado",
-                "multi__año_cursado_3er año",
-                "multi__genero_No respuesta",
-                "multi__año_cursado_4to año",
-                "num_bin__distancia_al_campus",
-                "multi__estudios_area_Otro",
-                "multi__estudios_area_Humanidades",
-                "num_bin__calif_promedio",
-                "multi__año_cursado_2do año",
-                "multi__genero_Otro",
-                "multi__genero_Masculino",
-                "multi__estudios_area_Ciencias",
-                "num_bin__extintor_incendios",
+                "num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__año_cursado_posgrado",
+                "multi__año_cursado_3er año","multi__genero_No respuesta","multi__año_cursado_4to año",
+                "num_bin__distancia_al_campus","multi__estudios_area_Otro","multi__estudios_area_Humanidades",
+                "num_bin__calif_promedio","multi__año_cursado_2do año","multi__genero_Otro",
+                "multi__genero_Masculino","multi__estudios_area_Ciencias","num_bin__extintor_incendios",
             ],
-            "Factor_total": [
-                4.2280,
-                2.3657,
-                1.5125,
-                1.2548,
-                1.1920,
-                1.1190,
-                1.0414,
-                1.0090,
-                0.9932,
-                0.9583,
-                0.9466,
-                0.9205,
-                0.9017,
-                0.8866,
-                0.5566,
-            ],
-            "%Cambio_total": [
-                322.8016,
-                136.5736,
-                51.2544,
-                25.4803,
-                19.1971,
-                11.8959,
-                4.1399,
-                0.9005,
-                -0.6814,
-                -4.1669,
-                -5.3377,
-                -7.9533,
-                -9.8288,
-                -11.3409,
-                -44.3401,
-            ],
+            "Factor_total": [4.2280,2.3657,1.5125,1.2548,1.1920,1.1190,1.0414,1.0090,0.9932,0.9583,0.9466,0.9205,0.9017,0.8866,0.5566],
+            "%Cambio_total": [322.8016,136.5736,51.2544,25.4803,19.1971,11.8959,4.1399,0.9005,-0.6814,-4.1669,-5.3377,-7.9533,-9.8288,-11.3409,-44.3401],
         }
     )
 
@@ -350,14 +363,10 @@ def get_fallback_data() -> Dict[str, Any]:
 # -------------------------------------------------------------
 # Funciones de acceso (módulo remoto o fallback)
 # -------------------------------------------------------------
-
 def try_remote_get_metrics(mod) -> Optional[Dict[str, Any]]:
-    """Si el módulo remoto expone get_metrics() retorna su resultado.
-    Espera un dict con claves: 'header_metrics', 'cambio_por_cobertura', 'cambio_total'.
-    """
     try:
         if mod and hasattr(mod, "get_metrics"):
-            data = mod.get_metrics()  # el módulo del usuario debe implementarlo
+            data = mod.get_metrics()
             return data
     except Exception as e:
         st.warning(f"Fallo get_metrics() del módulo remoto: {e}")
@@ -366,16 +375,13 @@ def try_remote_get_metrics(mod) -> Optional[Dict[str, Any]]:
 # -------------------------------------------------------------
 # UI HELPERS
 # -------------------------------------------------------------
-
 def fmt_float(x, nd=4):
     try:
         return f"{float(x):,.{nd}f}"
     except Exception:
         return x
 
-
 def kpi(label: str, value):
-    """Tarjeta KPI con estilo consistente."""
     st.markdown(
         f"""
         <div class='kpi-card'>
@@ -386,31 +392,27 @@ def kpi(label: str, value):
         unsafe_allow_html=True,
     )
 
-
 def render_small_table(df: pd.DataFrame, caption: str):
     df2 = df.copy()
-    # Dar formato a columnas con %
     for col in df2.columns:
         if "%" in col:
-            df2[col] = df2[col].apply(lambda v: float(v))
+            df2[col] = pd.to_numeric(df2[col], errors="coerce")
     st.caption(caption)
     st.dataframe(
         df2,
         use_container_width=True,
         hide_index=True,
         column_config={
-        "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
-        "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
-        "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
-        "Factor": st.column_config.NumberColumn("Factor", format="%.4f"),  # <--- añadido
-    },
+            "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
+            "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
+            "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
+            "Factor": st.column_config.NumberColumn("Factor", format="%.4f"),
+        },
     )
-
 
 # ================================
 # APP
 # ================================
-
 def main():
     st.set_page_config(page_title="Métricas de Prima por Cobertura", page_icon="📊", layout="wide")
     st.markdown(EXECUTIVE_CSS, unsafe_allow_html=True)
@@ -423,6 +425,20 @@ def main():
     with hcol2:
         st.markdown("<h1 class='title-text'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
         st.markdown("<span style='color:#6b7280'>Frecuencia · Severidad · Prima esperada</span>", unsafe_allow_html=True)
+
+    # Sidebar: fuente del Excel y parámetros de clustering
+    with st.sidebar:
+        st.header("Fuente de datos (Excel único)")
+        excel_url = st.text_input(
+            "URL RAW de GitHub (XLSX)",
+            value=DEFAULT_EXCEL_URL,
+            placeholder="https://raw.githubusercontent.com/usuario/repo/rama/predicciones_train_test_una_hoja.xlsx"
+        )
+        st.markdown("<div style='text-align:center;'>— ó —</div>", unsafe_allow_html=True)
+        uploaded = st.file_uploader("Subir Excel (XLSX)", type=["xlsx"])
+        st.markdown("---")
+        st.caption("Parámetros de clustering")
+        n_clusters = st.slider("Número de niveles de riesgo", min_value=3, max_value=7, value=5, step=1)
 
     # Cargar módulo remoto si se configuró REMOTE_PY_URL
     mod = load_remote_module(REMOTE_PY_URL, REMOTE_MODULE_NAME)
@@ -464,8 +480,7 @@ def main():
             st.markdown("---")
             df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable", "%Cambio_prima"]))
             tabla_vars = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
-            tabla_vars["Factor"] = (pd.to_numeric(tabla_vars["%Cambio_prima"], errors="coerce") / 100 + 1
-            ).round(4)
+            tabla_vars["Factor"] = (pd.to_numeric(tabla_vars["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
             tabla_vars = tabla_vars.sort_values("Variable").reset_index(drop=True)
             tabla_vars = tabla_vars[["Variable", "Factor", "%Cambio_prima"]]
             render_small_table(tabla_vars,"Cambio porcentual de la PRIMA ESPERADA por variable (selección)")
@@ -480,25 +495,47 @@ def main():
         render_small_table(tabla_total, "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
 
     # =====================
-    # Descarga de datos
+    # CARGA DEL EXCEL Y GRÁFICA POR COBERTURA
     # =====================
-    with st.expander("Descargar tablas como CSV"):
-        colA, colB = st.columns(2)
-        with colA:
-            if 'tabla_vars' in locals() and not tabla_vars.empty:
+    df_all = None
+    error_msg = None
+    if excel_url:
+        try:
+            df_all = read_excel_from_url(excel_url)
+        except Exception as e:
+            error_msg = f"No se pudo leer el Excel desde URL: {e}"
+    elif uploaded is not None:
+        try:
+            df_all = read_excel_from_upload(uploaded)
+        except Exception as e:
+            error_msg = f"No se pudo leer el Excel subido: {e}"
+    else:
+        st.info("💡 Para ver el mapa de riesgo por cobertura, ingresa la **URL RAW** del Excel o **sube** el archivo en el sidebar.")
+
+    if error_msg:
+        st.error(error_msg)
+
+    if df_all is not None:
+        try:
+            # Construir perfil y niveles de riesgo
+            df_all = build_perfil(df_all)
+            df_niv = compute_risk_levels(df_all, n_clusters=n_clusters)
+            df_all = df_all.merge(df_niv, on="perfil_base", how="left")
+
+            # Gráfica principal
+            with st.container(border=True):
+                st.markdown("### Mapa de riesgo por cobertura")
+                fig, df_sample = make_scatter(df_all, cobertura, sample_max=8000)
+                st.pyplot(fig, use_container_width=True)
+
                 st.download_button(
-                    label="Descargar selección por cobertura (CSV)",
-                    data=tabla_vars.to_csv(index=False).encode('utf-8'),
-                    file_name=f"cambio_por_variable_{cobertura}.csv",
-                    mime="text/csv",
+                    label="⬇️ Descargar datos de la muestra graficada (CSV)",
+                    data=df_sample.to_csv(index=False).encode("utf-8"),
+                    file_name=f"muestra_mapa_riesgo_{cobertura}.csv",
+                    mime="text/csv"
                 )
-        with colB:
-            st.download_button(
-                label="Descargar impacto total (CSV)",
-                data=tabla_total.to_csv(index=False).encode('utf-8'),
-                file_name="cambio_total_seleccion.csv",
-                mime="text/csv",
-            )
+        except Exception as e:
+            st.error(f"Error al preparar la visualización: {e}")
 
     # ==== PIE DE PÁGINA ====
     st.markdown(f"""
@@ -511,4 +548,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
