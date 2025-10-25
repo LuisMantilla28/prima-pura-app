@@ -356,7 +356,7 @@ if st.button("🔢 Calcular prima pura"):
         st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
 
-                # ==========================================================
+        # ==========================================================
         # 🧭 VISUALIZACIÓN COMPLETA DEL PERFIL DE RIESGO
         # ==========================================================
         inq = int(_to_int(dos_mas))
@@ -400,7 +400,7 @@ if st.button("🔢 Calcular prima pura"):
         
         # --- Barra de colores con niveles ---
         niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
-        colores = ["#C7E8CA", "#F5F3A4", "#FFD166", "#F4A261", "#E63946"]
+        colores = ["#80CFA9", "#FFF176", "#FFD54F", "#FB8C00", "#E53935"]  # tonos vivos 
         idx = niveles.index(nivel_riesgo)
         
         # --- Generar HTML de segmentos ---
