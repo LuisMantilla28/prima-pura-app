@@ -356,107 +356,147 @@ if st.button("🔢 Calcular prima pura"):
         st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
 
-        # ==========================================================
-        # 🧭 CLASIFICACIÓN CON BARRA DE RIESGO Y VIÑETAS
+                # ==========================================================
+        # 🧭 BARRA DE RIESGO + FLECHA + VIÑETAS (HTML consolidado)
         # ==========================================================
         inq = int(_to_int(dos_mas))
         camp = int(_to_int(en_campus))
         ext = int(_to_int(extintor))
-
-        # --- Determinar nivel de riesgo y factores ---
+        
+        # --- Determinar nivel y factores (solo 3 binarias) ---
         if inq == 1 and camp == 1 and ext == 0:
             nivel_riesgo = "Alto"
             factores = [
-                "🏠 Vive **fuera del campus** (mayor exposición a siniestros).",
-                "👥 Tiene **2 o más inquilinos** (mayor probabilidad de incidentes).",
-                "🔥 No cuenta con **extintor** (sin medidas preventivas básicas)."
+                "🏠 Vive <b>fuera del campus</b> (mayor exposición).",
+                "👥 Tiene <b>2 o más inquilinos</b> (mayor probabilidad de incidentes).",
+                "🔥 No cuenta con <b>extintor</b> (sin medida preventiva básica)."
             ]
         elif (inq == 1 and ext == 0 and camp == 0) or (inq == 0 and camp == 1 and ext == 0):
             nivel_riesgo = "Medio"
             factores = [
-                "👥 Comparte vivienda con varias personas **sin extintor disponible**.",
-                "🏠 Vive fuera del campus **o** tiene más de un inquilino (mayor exposición)."
+                "🔥 <b>Sin extintor</b> (capacidad de respuesta limitada).",
+                "🏠 Presenta al menos un factor de exposición: <b>vive fuera</b> del campus o <b>varios inquilinos</b>."
             ]
         elif inq == 1 and ext == 1 and camp == 1:
             nivel_riesgo = "Medio-alto"
             factores = [
-                "🏠 Vive **fuera del campus**, lo que aumenta la exposición.",
-                "👥 Tiene **2 o más inquilinos** (mayor frecuencia esperada).",
-                "🔥 Dispone de **extintor**, lo que reduce parcialmente la severidad."
+                "🏠 Vive <b>fuera del campus</b> (mayor exposición).",
+                "👥 Tiene <b>2 o más inquilinos</b> (frecuencia potencial más alta).",
+                "🧯 Tiene <b>extintor</b>, que mitiga parcialmente la severidad."
             ]
         elif (inq == 0 and camp == 1 and ext == 1) or (inq == 1 and camp == 0 and ext == 1):
             nivel_riesgo = "Medio-bajo"
             factores = [
-                "🔥 Cuenta con **extintor** (reduce severidad de siniestros).",
-                "🏠 Presenta solo un factor de exposición (vive fuera del campus o tiene varios inquilinos)."
+                "🧯 Cuenta con <b>extintor</b> (reduce severidad).",
+                "🏠 Solo un factor de exposición: <b>fuera del campus</b> o <b>varios inquilinos</b>."
             ]
         else:
             nivel_riesgo = "Bajo"
             factores = [
-                "🏠 Vive **dentro del campus** (mayor control y vigilancia).",
-                "👤 No comparte vivienda con varios inquilinos.",
-                "🔥 Dispone de **extintor**, lo que reduce probabilidad y severidad del riesgo."
+                "🏠 Vive <b>dentro del campus</b> (mayor control y vigilancia).",
+                "👤 No comparte con varios inquilinos.",
+                "🧯 Tiene <b>extintor</b> (menor probabilidad y severidad)."
             ]
-
-        # --- Colores y orden de niveles ---
+        
+        # --- Config barra ---
         niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
         colores = ["#C7E8CA", "#F5F3A4", "#FFD166", "#F4A261", "#E63946"]
         idx = niveles.index(nivel_riesgo)
-
-        # --- HTML para la barra con flecha ---
-        barra_html = "<div style='display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:1.2rem;'>"
+        pos_pct = (idx + 0.5) * 100.0 / 5.0  # posición horizontal de la flecha (centro de la celda)
+        
+        # --- Construir segmentos en una sola cadena ---
+        segmentos_html = ""
         for i, (niv, col) in enumerate(zip(niveles, colores)):
             opacidad = "1" if i == idx else "0.35"
-            barra_html += f"""
-            <div style='flex:1; background:{col}; height:26px; border-radius:6px;
-                        margin:0 3px; opacity:{opacidad};
-                        position:relative; text-align:center;'>
-                <span style='font-weight:600; color:#003366; font-size:0.9rem; position:absolute;
-                             top:30px; left:50%; transform:translateX(-50%); white-space:nowrap;'>{niv}</span>
+            segmentos_html += f"""
+            <div class="segmento" style="
+                 background:{col}; opacity:{opacidad};
+                 height:26px; border-radius:6px; position:relative;">
+                <span class="etiqueta-nivel">{niv}</span>
             </div>
             """
-        barra_html += "</div>"
-
-        # --- Flecha indicadora ---
-        flecha_html = f"""
-        <div style='width:100%; text-align:center; margin-top:0.3rem;'>
-            <span style='display:inline-block; transform:translateX({idx * 115 - 230}px); font-size:1.6rem; color:#003366;'>⬇️</span>
-        </div>
-        """
-
-        # --- Convertir factores a lista HTML ---
+        
+        # --- Lista de factores (viñetas) ---
         factores_html = "".join([f"<li>{f}</li>" for f in factores])
-
-        # --- Mostrar todo en una tarjeta visual ---
-        st.markdown(f"""
-        <div style="
-            background-color:#F8FAFF;
+        
+        # --- HTML completo (UN SOLO st.markdown) ---
+        html_completo = f"""
+        <div class="tarjeta-riesgo">
+          <h3 class="titulo">🏷️ Nivel de Riesgo: {nivel_riesgo}</h3>
+        
+          <div class="barra-wrapper">
+            <div class="barra">
+              {segmentos_html}
+            </div>
+            <!-- Flecha CSS -->
+            <div class="flecha" style="left: {pos_pct}%"></div>
+          </div>
+        
+          <ul class="lista-factores">
+            {factores_html}
+          </ul>
+        </div>
+        
+        <style>
+          .tarjeta-riesgo {{
+            background:#F8FAFF;
             border-radius:16px;
             padding:1.4rem;
             box-shadow:0 3px 12px rgba(0,0,0,0.15);
             margin-top:28px;
-            text-align:center;
-            animation: fadeIn 1.2s ease-in-out;
-        ">
-            <h3 style="color:#003366; font-weight:800; font-size:1.4rem; margin-bottom:0.6rem;">
-                🏷️ Nivel de Riesgo: {nivel_riesgo}
-            </h3>
-            {barra_html}
-            {flecha_html}
-            <ul style="font-size:1.05rem; color:#002D62; margin-left:20px; text-align:left; line-height:1.5;">
-                {factores_html}
-            </ul>
-        </div>
-
-        <style>
-        @keyframes fadeIn {{
+            animation: fadeIn 0.9s ease-in-out;
+          }}
+          .titulo {{
+            color:#003366; font-weight:800; font-size:1.35rem; margin:0 0 0.6rem 0; text-align:center;
+          }}
+          .barra-wrapper {{
+            position:relative;
+            padding-bottom:42px;   /* deja espacio para etiquetas y flecha */
+            margin-top:8px;
+          }}
+          .barra {{
+            display:grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap:6px;
+            align-items:stretch;
+          }}
+          .etiqueta-nivel {{
+            position:absolute; top:32px; left:50%; transform:translateX(-50%);
+            font-weight:600; color:#003366; font-size:0.9rem; white-space:nowrap;
+          }}
+          .flecha {{
+            position:absolute; top:26px; transform:translateX(-50%);
+            width:0; height:0;
+            border-left: 10px solid transparent;
+            border-right:10px solid transparent;
+            border-top: 12px solid #003366;
+          }}
+          .lista-factores {{
+            font-size:1.05rem; color:#002D62; margin:14px 0 0 18px; line-height:1.5;
+          }}
+          @keyframes fadeIn {{
             0% {{opacity: 0; transform: translateY(10px);}}
             100% {{opacity: 1; transform: translateY(0);}}
-        }}
+          }}
         </style>
-        """, unsafe_allow_html=True)
+        """
+        
+        # MUY IMPORTANTE: usar markdown con unsafe_allow_html
+        st.markdown(html_completo, unsafe_allow_html=True)
+        
 
 
+
+        
+
+
+
+
+
+
+
+        
+       
     
         # ==== DESCARGA ====
         st.download_button(
