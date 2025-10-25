@@ -357,13 +357,13 @@ if st.button("🔢 Calcular prima pura"):
 
 
                 # ==========================================================
-        # 🧭 BARRA DE RIESGO + FLECHA + VIÑETAS (HTML consolidado)
+        # 🧭 VISUALIZACIÓN COMPLETA DEL PERFIL DE RIESGO
         # ==========================================================
         inq = int(_to_int(dos_mas))
         camp = int(_to_int(en_campus))
         ext = int(_to_int(extintor))
         
-        # --- Determinar nivel y factores (solo 3 binarias) ---
+        # --- Clasificación y factores ---
         if inq == 1 and camp == 1 and ext == 0:
             nivel_riesgo = "Alto"
             factores = [
@@ -398,93 +398,97 @@ if st.button("🔢 Calcular prima pura"):
                 "🧯 Tiene <b>extintor</b> (menor probabilidad y severidad)."
             ]
         
-        # --- Config barra ---
+        # --- Barra de colores con niveles ---
         niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
         colores = ["#C7E8CA", "#F5F3A4", "#FFD166", "#F4A261", "#E63946"]
         idx = niveles.index(nivel_riesgo)
-        pos_pct = (idx + 0.5) * 100.0 / 5.0  # posición horizontal de la flecha (centro de la celda)
         
-        # --- Construir segmentos en una sola cadena ---
-        segmentos_html = ""
-        for i, (niv, col) in enumerate(zip(niveles, colores)):
-            opacidad = "1" if i == idx else "0.35"
-            segmentos_html += f"""
-            <div class="segmento" style="
-                 background:{col}; opacity:{opacidad};
-                 height:26px; border-radius:6px; position:relative;">
-                <span class="etiqueta-nivel">{niv}</span>
-            </div>
-            """
+        # --- Generar HTML de segmentos ---
+        segmentos_html = "".join([
+            f"<div class='segmento' style='background:{col}; opacity:{'1' if i==idx else '0.35'};'></div>"
+            for i, col in enumerate(colores)
+        ])
         
-        # --- Lista de factores (viñetas) ---
+        # --- Lista de factores ---
         factores_html = "".join([f"<li>{f}</li>" for f in factores])
         
-        # --- HTML completo (UN SOLO st.markdown) ---
-        html_completo = f"""
-        <div class="tarjeta-riesgo">
+        # --- HTML final (un solo bloque, sin fragmentar) ---
+        html_final = f"""
+        <div class="tarjeta">
           <h3 class="titulo">🏷️ Nivel de Riesgo: {nivel_riesgo}</h3>
-        
-          <div class="barra-wrapper">
-            <div class="barra">
-              {segmentos_html}
+          <div class="barra-container">
+            <div class="barra">{segmentos_html}</div>
+            <div class="etiquetas">
+              {''.join([f"<span>{niv}</span>" for niv in niveles])}
             </div>
-            <!-- Flecha CSS -->
-            <div class="flecha" style="left: {pos_pct}%"></div>
+            <div class="flecha" style="left: calc({idx} * 20% + 10%);"></div>
           </div>
-        
-          <ul class="lista-factores">
-            {factores_html}
-          </ul>
+          <ul class="factores">{factores_html}</ul>
         </div>
         
         <style>
-          .tarjeta-riesgo {{
-            background:#F8FAFF;
-            border-radius:16px;
-            padding:1.4rem;
-            box-shadow:0 3px 12px rgba(0,0,0,0.15);
-            margin-top:28px;
-            animation: fadeIn 0.9s ease-in-out;
-          }}
-          .titulo {{
-            color:#003366; font-weight:800; font-size:1.35rem; margin:0 0 0.6rem 0; text-align:center;
-          }}
-          .barra-wrapper {{
-            position:relative;
-            padding-bottom:42px;   /* deja espacio para etiquetas y flecha */
-            margin-top:8px;
-          }}
-          .barra {{
-            display:grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap:6px;
-            align-items:stretch;
-          }}
-          .etiqueta-nivel {{
-            position:absolute; top:32px; left:50%; transform:translateX(-50%);
-            font-weight:600; color:#003366; font-size:0.9rem; white-space:nowrap;
-          }}
-          .flecha {{
-            position:absolute; top:26px; transform:translateX(-50%);
-            width:0; height:0;
-            border-left: 10px solid transparent;
-            border-right:10px solid transparent;
-            border-top: 12px solid #003366;
-          }}
-          .lista-factores {{
-            font-size:1.05rem; color:#002D62; margin:14px 0 0 18px; line-height:1.5;
-          }}
-          @keyframes fadeIn {{
-            0% {{opacity: 0; transform: translateY(10px);}}
-            100% {{opacity: 1; transform: translateY(0);}}
-          }}
+        .tarjeta {{
+          background:#F8FAFF;
+          border-radius:16px;
+          padding:1.5rem;
+          box-shadow:0 3px 12px rgba(0,0,0,0.15);
+          margin-top:28px;
+          animation: fadeIn 0.9s ease-in-out;
+        }}
+        .titulo {{
+          color:#003366; text-align:center;
+          font-weight:800; font-size:1.4rem;
+          margin-bottom:1rem;
+        }}
+        .barra-container {{
+          position:relative;
+          margin-bottom:1.4rem;
+        }}
+        .barra {{
+          display:flex;
+          height:24px;
+          border-radius:6px;
+          overflow:hidden;
+        }}
+        .segmento {{
+          flex:1;
+          transition:opacity 0.4s ease;
+        }}
+        .etiquetas {{
+          display:flex;
+          justify-content:space-between;
+          margin-top:6px;
+          font-size:0.9rem;
+          font-weight:600;
+          color:#003366;
+        }}
+        .flecha {{
+          position:absolute;
+          top:24px;
+          transform:translateX(-50%);
+          width:0; height:0;
+          border-left: 9px solid transparent;
+          border-right:9px solid transparent;
+          border-top: 12px solid #003366;
+          transition:left 0.5s ease;
+        }}
+        .factores {{
+          margin-top:12px;
+          margin-left:20px;
+          color:#002D62;
+          font-size:1.05rem;
+          line-height:1.6;
+        }}
+        @keyframes fadeIn {{
+          0% {{opacity:0; transform:translateY(10px);}}
+          100% {{opacity:1; transform:translateY(0);}}
+        }}
         </style>
         """
         
-        # MUY IMPORTANTE: usar markdown con unsafe_allow_html
-        st.markdown(html_completo, unsafe_allow_html=True)
+        st.markdown(html_final, unsafe_allow_html=True)
         
-
+        
 
 
         
