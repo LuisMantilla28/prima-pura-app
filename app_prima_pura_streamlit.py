@@ -355,57 +355,96 @@ if st.button("🔢 Calcular prima pura"):
         """, unsafe_allow_html=True)
         st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
-                # ==========================================================
-        # 🧭 CLASIFICACIÓN VISUAL DEL PERFIL DE RIESGO (profesional)
+           # ==========================================================
+        # 🧭 CLASIFICACIÓN CON BARRA DE RIESGO Y VIÑETAS
         # ==========================================================
         inq = int(_to_int(dos_mas))
         camp = int(_to_int(en_campus))
         ext = int(_to_int(extintor))
 
-        # --- Determinar nivel de riesgo según combinación ---
+        # --- Determinar nivel de riesgo y factores ---
         if inq == 1 and camp == 1 and ext == 0:
             nivel_riesgo = "Alto"
-            explicacion = "Vivir fuera del campus y tener 2 o más inquilinos aumenta la exposición al riesgo, especialmente sin extintor."
-        elif inq == 1 and camp == 0 and ext == 0:
-            nivel_riesgo = "Alto"
-            explicacion = "Compartir vivienda con varios inquilinos y no contar con extintor incrementa la probabilidad y severidad de siniestros."
-        elif (inq == 1 and ext == 1 and camp == 0) or (inq == 0 and camp == 1 and ext == 0):
+            factores = [
+                "🏠 Vive **fuera del campus** (mayor exposición a siniestros).",
+                "👥 Tiene **2 o más inquilinos** (mayor probabilidad de incidentes).",
+                "🔥 No cuenta con **extintor** (sin medidas preventivas básicas)."
+            ]
+        elif (inq == 1 and ext == 0 and camp == 0) or (inq == 0 and camp == 1 and ext == 0):
+            nivel_riesgo = "Medio"
+            factores = [
+                "👥 Comparte vivienda con varias personas **sin extintor disponible**.",
+                "🏠 Vive fuera del campus **o** tiene más de un inquilino (mayor exposición)."
+            ]
+        elif inq == 1 and ext == 1 and camp == 1:
             nivel_riesgo = "Medio-alto"
-            explicacion = "Aunque cuenta con alguna medida de seguridad, vivir fuera del campus o tener varios inquilinos eleva el riesgo."
-        elif (inq == 0 and camp == 1 and ext == 1) or (inq == 0 and camp == 0 and ext == 0):
+            factores = [
+                "🏠 Vive **fuera del campus**, lo que aumenta la exposición.",
+                "👥 Tiene **2 o más inquilinos** (mayor frecuencia esperada).",
+                "🔥 Dispone de **extintor**, lo que reduce parcialmente la severidad."
+            ]
+        elif (inq == 0 and camp == 1 and ext == 1) or (inq == 1 and camp == 0 and ext == 1):
             nivel_riesgo = "Medio-bajo"
-            explicacion = "El riesgo es moderado: vive solo o dentro del campus, pero con algunas condiciones que requieren precaución."
+            factores = [
+                "🔥 Cuenta con **extintor** (reduce severidad de siniestros).",
+                "🏠 Presenta solo un factor de exposición (vive fuera del campus o tiene varios inquilinos)."
+            ]
         else:
             nivel_riesgo = "Bajo"
-            explicacion = "Cuenta con medidas de seguridad (extintor) y condiciones de bajo riesgo."
+            factores = [
+                "🏠 Vive **dentro del campus** (mayor control y vigilancia).",
+                "👤 No comparte vivienda con varios inquilinos.",
+                "🔥 Dispone de **extintor**, lo que reduce probabilidad y severidad del riesgo."
+            ]
 
-        # --- Asignar color según nivel ---
-        color_riesgo = {
-            "Bajo": "#C7E8CA",
-            "Medio-bajo": "#F5F3A4",
-            "Medio": "#FFD166",
-            "Medio-alto": "#F4A261",
-            "Alto": "#E63946"
-        }.get(nivel_riesgo, "#DDDDDD")
+        # --- Colores y orden de niveles ---
+        niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
+        colores = ["#C7E8CA", "#F5F3A4", "#FFD166", "#F4A261", "#E63946"]
+        idx = niveles.index(nivel_riesgo)
 
-        # --- Mostrar franja con animación suave ---
+        # --- HTML para la barra con flecha ---
+        barra_html = "<div style='display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:1.2rem;'>"
+        for i, (niv, col) in enumerate(zip(niveles, colores)):
+            opacidad = "1" if i == idx else "0.35"
+            barra_html += f"""
+            <div style='flex:1; background:{col}; height:26px; border-radius:6px;
+                        margin:0 3px; opacity:{opacidad};
+                        position:relative; text-align:center;'>
+                <span style='font-weight:600; color:#003366; font-size:0.9rem; position:absolute;
+                             top:30px; left:50%; transform:translateX(-50%); white-space:nowrap;'>{niv}</span>
+            </div>
+            """
+        barra_html += "</div>"
+
+        # --- Flecha indicadora ---
+        flecha_html = f"""
+        <div style='width:100%; text-align:center; margin-top:0.3rem;'>
+            <span style='display:inline-block; transform:translateX({idx * 115 - 230}px); font-size:1.6rem; color:#003366;'>⬇️</span>
+        </div>
+        """
+
+        # --- Convertir factores a lista HTML ---
+        factores_html = "".join([f"<li>{f}</li>" for f in factores])
+
+        # --- Mostrar todo en una tarjeta visual ---
         st.markdown(f"""
         <div style="
-            background-color:{color_riesgo};
-            padding:1.4rem;
+            background-color:#F8FAFF;
             border-radius:16px;
+            padding:1.4rem;
+            box-shadow:0 3px 12px rgba(0,0,0,0.15);
+            margin-top:28px;
             text-align:center;
-            margin-top:25px;
-            margin-bottom:15px;
-            box-shadow:0 4px 12px rgba(0,0,0,0.15);
             animation: fadeIn 1.2s ease-in-out;
         ">
-            <h3 style="color:#003366; font-weight:800; margin-bottom:0.4rem; font-size:1.4rem;">
+            <h3 style="color:#003366; font-weight:800; font-size:1.4rem; margin-bottom:0.6rem;">
                 🏷️ Nivel de Riesgo: {nivel_riesgo}
             </h3>
-            <p style="font-size:1.05rem; color:#002D62; margin:0;">
-                {explicacion}
-            </p>
+            {barra_html}
+            {flecha_html}
+            <ul style="font-size:1.05rem; color:#002D62; margin-left:20px; text-align:left; line-height:1.5;">
+                {factores_html}
+            </ul>
         </div>
 
         <style>
@@ -416,8 +455,6 @@ if st.button("🔢 Calcular prima pura"):
         </style>
         """, unsafe_allow_html=True)
 
-
-       
 
         # ==== DESCARGA ====
         st.download_button(
