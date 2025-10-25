@@ -1,7 +1,7 @@
 # app.py
 # -------------------------------------------------------------
 # App Streamlit ejecutivo para métricas y coberturas
-# + mapas y barras (matplotlib puro) con Excel RAW de GitHub.
+# + mapas y barras (matplotlib) con Excel RAW de GitHub.
 # -------------------------------------------------------------
 # Requisitos:
 #   pip install streamlit requests pandas numpy matplotlib openpyxl scipy
@@ -55,7 +55,7 @@ html, body, [class*="css"], .stMarkdown, .stText, .stDataFrame {
 .block-container { padding-top: 0.9rem; padding-bottom: 1.4rem; }
 h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
 
-/* KPI más compactos */
+/* KPI más compactos (misma altura visual que el bloque "Cobertura") */
 .kpi-card {
   background: #1E3A8A; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px;
   padding: 10px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); color:#fff; margin: 0;
@@ -63,9 +63,7 @@ h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
 .kpi-card .metric-label { font-size: 0.78rem; margin-bottom: 4px; opacity:0.9; }
 .kpi-card .metric-value { font-size: 1.08rem; font-weight: 700; line-height: 1.2; }
 
-/* Títulos pequeños dentro de contenedores */
 h3, h4 { margin: 0.2rem 0 0.6rem 0; }
-
 .caption { color: #6b7280 !important; text-transform: uppercase; letter-spacing: .03em; font-size: .78rem; }
 .footer { margin-top: 0.6rem; color:#6b7280; }
 </style>
@@ -149,10 +147,20 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
     return col_freq, col_sev, col_pri
 
 # -------------------------------------------------------------
+# Helpers de visualización (clave: usar st.image con buffer PNG)
+# -------------------------------------------------------------
+def fig_to_stimage(fig, *, dpi: int = 220):
+    """Renderiza un fig de matplotlib como PNG en memoria y lo muestra con st.image."""
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
+    buf.seek(0)
+    st.image(buf, use_column_width=True)
+
+# -------------------------------------------------------------
 # PLOTS (matplotlib)
 # -------------------------------------------------------------
 def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
-    """Scatter con contorno blanco y leyenda integrada (evita encogimiento inicial)."""
+    """Scatter con contorno blanco y leyenda integrada (render estable)."""
     col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
     df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
 
@@ -163,8 +171,8 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
 
     colores = [COLOR_MAP.get(n, "#999999") for n in df_plot["nivel_riesgo"].values]
 
-    # usar constrained_layout para que no salga diminuto
-    fig, ax = plt.subplots(figsize=(10.5, 6.2), constrained_layout=True)
+    # tamaño generoso; no dependemos de use_container_width
+    fig, ax = plt.subplots(figsize=(11.5, 6.6))  # ancho x alto
     ax.scatter(
         pd.to_numeric(df_plot[col_freq], errors="coerce"),
         pd.to_numeric(df_plot[col_sev], errors="coerce"),
@@ -182,17 +190,17 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
     ax.grid(True, linestyle="--", alpha=0.35)
     ax.set_facecolor("#FBFBFB")
 
-    # Leyenda DENTRO del eje (evita compresión general)
+    # Leyenda dentro del eje (no comprime el canvas)
     legend_patches = [mpatches.Patch(color=COLOR_MAP[n], label=n) for n in NIVELES_RIESGO]
     ax.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper left",
               frameon=True, fontsize=9, title_fontsize=10)
 
     return fig, df_plot[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
 
-def plot_bars(df: pd.DataFrame, x_col: str, y_col: str, title: str, xtick_rotation: int = 25,
-              width: Tuple[float, float]=(10.0, 6.0)):
-    """Barras con layout consistente y ejes legibles."""
-    fig, ax = plt.subplots(figsize=width, constrained_layout=True)
+def plot_bars(df: pd.DataFrame, x_col: str, y_col: str, title: str,
+              xtick_rotation: int = 25, width: Tuple[float, float]=(11.0, 6.2)):
+    """Barras con layout consistente y ejes legibles (render como imagen)."""
+    fig, ax = plt.subplots(figsize=width)
     x_vals = df[x_col].astype(str).tolist()
     y_vals = pd.to_numeric(df[y_col], errors="coerce").fillna(0).tolist()
 
@@ -367,7 +375,7 @@ def main():
                 with st.container(border=True):
                     st.markdown("### Mapa de riesgo por cobertura")
                     fig_scatter, df_sample = make_scatter_matplotlib(df_all, cobertura, sample_max=8000)
-                    st.pyplot(fig_scatter, use_container_width=True)
+                    fig_to_stimage(fig_scatter, dpi=220)   # 👈 render robusto
                     plt.close(fig_scatter)
 
                     st.download_button(
@@ -389,19 +397,18 @@ def main():
                         df_sel = df_sel[["Variable", "Factor"]].sort_values("Variable").reset_index(drop=True)
                         fig_bar_sel = plot_bars(df_sel, x_col="Variable", y_col="Factor",
                                                 title="Factor por variable (selección)",
-                                                xtick_rotation=20, width=(10.0, 6.2))
-                        st.pyplot(fig_bar_sel, use_container_width=True)
+                                                xtick_rotation=20, width=(11.0, 6.2))
+                        fig_to_stimage(fig_bar_sel, dpi=220)  # 👈 render robusto
                         plt.close(fig_bar_sel)
 
-            # FILA INFERIOR (más pequeño)
+            # FILA INFERIOR (más pequeña)
             with st.container(border=True):
                 st.markdown("### Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
                 if cambio_total is None or cambio_total.empty:
                     st.info("No hay datos de cambio total disponibles.")
                 else:
                     df_total_sel = cambio_total.copy()
-                    # Solo VARS_BIN (comenta esta línea si quieres todas)
-                    df_total_sel = df_total_sel[df_total_sel["Variable"].isin(VARS_BIN)].copy()
+                    df_total_sel = df_total_sel[df_total_sel["Variable"].isin(VARS_BIN)].copy()  # solo selección
                     if df_total_sel.empty:
                         st.info("No hay datos para las variables seleccionadas en el cambio total.")
                     else:
@@ -409,8 +416,8 @@ def main():
                         # Figura intencionalmente más baja
                         fig_bar_total = plot_bars(df_total_sel, x_col="Variable", y_col="Factor_total",
                                                   title="Factor total por variable (ponderado por prima base)",
-                                                  xtick_rotation=20, width=(9.0, 3.8))
-                        st.pyplot(fig_bar_total, use_container_width=True)
+                                                  xtick_rotation=20, width=(10.0, 3.6))
+                        fig_to_stimage(fig_bar_total, dpi=220)  # 👈 render robusto
                         plt.close(fig_bar_total)
 
         except Exception as e:
