@@ -1,10 +1,9 @@
 # app.py
 # -------------------------------------------------------------
 # App Streamlit ejecutivo para métricas y coberturas
-# con opción de conectar un módulo .py remoto (GitHub RAW)
-# + gráfico de mapa de riesgo usando Excel único de GitHub.
+# + mapas y barras (matplotlib puro) con Excel RAW de GitHub.
 # -------------------------------------------------------------
-# Requisitos sugeridos:
+# Requisitos:
 #   pip install streamlit requests pandas numpy matplotlib openpyxl scipy
 # Ejecutar:  streamlit run app.py
 # -------------------------------------------------------------
@@ -13,7 +12,7 @@ import io
 import os
 import sys
 import tempfile
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Dict, Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -25,17 +24,13 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 # ================================
-# CONFIGURACIÓN
+# CONFIG
 # ================================
-REMOTE_PY_URL = os.getenv("REMOTE_PY_URL", "")  # módulo remoto RAW (opcional)
+REMOTE_PY_URL = os.getenv("REMOTE_PY_URL", "")
 REMOTE_MODULE_NAME = "modelo_remoto"
-
 LOGO_URL = os.getenv("LOGO_URL", "")
-
-# Excel ÚNICO SIEMPRE desde GitHub RAW
 EXCEL_URL = "https://raw.githubusercontent.com/LuisMantilla28/prima-pura-app/main/predicciones_train_test_una_hoja.xlsx"
 
-# Nombres canónicos de coberturas
 COBERTURAS = [
     "Gastos_Adicionales_siniestros_monto",
     "Gastos_Medicos_RC_siniestros_monto",
@@ -43,7 +38,6 @@ COBERTURAS = [
     "Contenidos_siniestros_monto",
 ]
 
-# Variables a mostrar en tablas/plots (selección)
 VARS_BIN = [
     "num_bin__2_o_mas_inquilinos",
     "num_bin__en_campus",
@@ -51,27 +45,33 @@ VARS_BIN = [
 ]
 
 # ================================
-# ESTILO (CSS) — look ejecutivo
+# ESTILO (CSS)
 # ================================
 EXECUTIVE_CSS = """
 <style>
 html, body, [class*="css"], .stMarkdown, .stText, .stDataFrame {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
-.block-container { padding-top: 1.0rem; padding-bottom: 2rem; }
+.block-container { padding-top: 0.9rem; padding-bottom: 1.4rem; }
 h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
+
+/* KPI más compactos */
 .kpi-card {
-  background: #1E3A8A; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px;
-  padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); color:#fff;
+  background: #1E3A8A; border: 1px solid rgba(0,0,0,0.06); border-radius: 12px;
+  padding: 10px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); color:#fff; margin: 0;
 }
-.kpi-card .metric-label { font-size: 0.85rem; margin-bottom: 6px; opacity:0.9; }
-.kpi-card .metric-value { font-size: 1.35rem; font-weight: 700; }
+.kpi-card .metric-label { font-size: 0.78rem; margin-bottom: 4px; opacity:0.9; }
+.kpi-card .metric-value { font-size: 1.08rem; font-weight: 700; line-height: 1.2; }
+
+/* Títulos pequeños dentro de contenedores */
+h3, h4 { margin: 0.2rem 0 0.6rem 0; }
+
 .caption { color: #6b7280 !important; text-transform: uppercase; letter-spacing: .03em; font-size: .78rem; }
-.footer { margin-top: 1rem; color:#6b7280; }
+.footer { margin-top: 0.6rem; color:#6b7280; }
 </style>
 """
 
-# Paleta niveles de riesgo
+# Paleta niveles
 NIVELES_RIESGO = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
 COLOR_MAP = {
     "Bajo": "#2E8B57",
@@ -81,7 +81,7 @@ COLOR_MAP = {
     "Alto": "#C0392B",
 }
 
-# Mapeo FIJO de combinación binaria → nivel de riesgo (según tu tabla)
+# Mapa fijo de perfiles
 RISK_MAP_FIXED = {
     "0_0_1": "Bajo",
     "0_0_0": "Bajo",
@@ -94,7 +94,7 @@ RISK_MAP_FIXED = {
 }
 
 # -------------------------------------------------------------
-# Utilidad: cargar un .py remoto (raw GitHub) y convertirlo en módulo importable
+# Módulo remoto opcional
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
 def load_remote_module(raw_url: str, module_name: str):
@@ -117,7 +117,7 @@ def load_remote_module(raw_url: str, module_name: str):
         return None
 
 # -------------------------------------------------------------
-# Lectura del Excel único (desde URL)
+# Lectura Excel
 # -------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def read_excel_from_url(url: str) -> pd.DataFrame:
@@ -126,7 +126,6 @@ def read_excel_from_url(url: str) -> pd.DataFrame:
     return pd.read_excel(io.BytesIO(resp.content))
 
 def build_perfil(df: pd.DataFrame) -> pd.DataFrame:
-    """Crea 'perfil_base' y asigna nivel_riesgo FIJO (según mapa)."""
     df = df.copy()
     for c in ["2_o_mas_inquilinos", "en_campus", "extintor_incendios"]:
         if c not in df.columns:
@@ -150,10 +149,10 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
     return col_freq, col_sev, col_pri
 
 # -------------------------------------------------------------
-# PLOTS (matplotlib puro)
+# PLOTS (matplotlib)
 # -------------------------------------------------------------
 def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
-    """Scatter E[N] vs E[Y|N>0] con contorno blanco fino y color por nivel de riesgo."""
+    """Scatter con contorno blanco y leyenda integrada (evita encogimiento inicial)."""
     col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
     df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
 
@@ -162,19 +161,18 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
     s = np.clip(s, np.nanpercentile(s, 5), np.nanpercentile(s, 95))
     s_norm = 40 + (s - s.min()) * (300 - 40) / (s.max() - s.min() + 1e-9)
 
-    # Colores por nivel
     colores = [COLOR_MAP.get(n, "#999999") for n in df_plot["nivel_riesgo"].values]
 
-    plt.rcParams.update({"figure.dpi": 120, "font.size": 11, "axes.titlesize": 14, "axes.labelsize": 11})
-    fig, ax = plt.subplots(figsize=(9, 6))
+    # usar constrained_layout para que no salga diminuto
+    fig, ax = plt.subplots(figsize=(10.5, 6.2), constrained_layout=True)
     ax.scatter(
         pd.to_numeric(df_plot[col_freq], errors="coerce"),
         pd.to_numeric(df_plot[col_sev], errors="coerce"),
         s=s_norm,
         c=colores,
-        alpha=0.85,
-        edgecolors="white",      # contorno blanco
-        linewidths=0.6           # trazo fino
+        alpha=0.9,
+        edgecolors="white",
+        linewidths=0.6
     )
 
     c_label = cobertura.replace("_siniestros_monto", "").replace("_", " ").capitalize()
@@ -184,31 +182,31 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
     ax.grid(True, linestyle="--", alpha=0.35)
     ax.set_facecolor("#FBFBFB")
 
-    # Leyenda manual (una sola)
+    # Leyenda DENTRO del eje (evita compresión general)
     legend_patches = [mpatches.Patch(color=COLOR_MAP[n], label=n) for n in NIVELES_RIESGO]
-    fig.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper right",
-               frameon=True, fontsize=10, title_fontsize=11)
+    ax.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper left",
+              frameon=True, fontsize=9, title_fontsize=10)
 
-    plt.tight_layout()
     return fig, df_plot[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
 
-def plot_bars(df: pd.DataFrame, x_col: str, y_col: str, title: str, xtick_rotation: int = 30):
-    """Gráfico de barras simple (una sola figura) con matplotlib puro."""
-    fig, ax = plt.subplots(figsize=(9, 6))
+def plot_bars(df: pd.DataFrame, x_col: str, y_col: str, title: str, xtick_rotation: int = 25,
+              width: Tuple[float, float]=(10.0, 6.0)):
+    """Barras con layout consistente y ejes legibles."""
+    fig, ax = plt.subplots(figsize=width, constrained_layout=True)
     x_vals = df[x_col].astype(str).tolist()
     y_vals = pd.to_numeric(df[y_col], errors="coerce").fillna(0).tolist()
 
-    ax.bar(x_vals, y_vals)  # sin color explícito
+    ax.bar(x_vals, y_vals)
     ax.set_title(title, fontweight="bold", color="#003366")
     ax.set_xlabel(x_col.replace("_", " "))
     ax.set_ylabel(y_col.replace("_", " "))
     ax.grid(axis="y", linestyle="--", alpha=0.35)
     plt.setp(ax.get_xticklabels(), rotation=xtick_rotation, ha="right")
-    plt.tight_layout()
+
     return fig
 
 # -------------------------------------------------------------
-# Fallback de datos (cuando módulo remoto no provee funciones)
+# Datos fallback
 # -------------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def get_fallback_data() -> Dict[str, Any]:
@@ -239,7 +237,6 @@ def get_fallback_data() -> Dict[str, Any]:
         },
     }
 
-    # Tablas de cambio (las tuyas)
     cambio_por_cobertura = {
         "Gastos_Adicionales_siniestros_monto": pd.DataFrame(
             {"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__genero_No respuesta","multi__año_cursado_4to año","multi__año_cursado_posgrado","multi__año_cursado_3er año","multi__estudios_area_Otro","multi__genero_Masculino","num_bin__distancia_al_campus","multi__estudios_area_Humanidades","num_bin__calif_promedio","multi__estudios_area_Ciencias","multi__año_cursado_2do año","multi__genero_Otro","num_bin__extintor_incendios"],
@@ -273,26 +270,23 @@ def get_fallback_data() -> Dict[str, Any]:
         }
     )
 
-    return {
-        "header_metrics": header_metrics,
-        "cambio_por_cobertura": cambio_por_cobertura,
-        "cambio_total": cambio_total,
-    }
+    return {"header_metrics": header_metrics,
+            "cambio_por_cobertura": cambio_por_cobertura,
+            "cambio_total": cambio_total}
 
 # -------------------------------------------------------------
-# Funciones de acceso (módulo remoto o fallback)
+# Acceso módulo remoto
 # -------------------------------------------------------------
 def try_remote_get_metrics(mod) -> Optional[Dict[str, Any]]:
     try:
         if mod and hasattr(mod, "get_metrics"):
-            data = mod.get_metrics()
-            return data
+            return mod.get_metrics()
     except Exception as e:
         st.warning(f"Fallo get_metrics() del módulo remoto: {e}")
     return None
 
 # -------------------------------------------------------------
-# UI HELPERS
+# UI helpers
 # -------------------------------------------------------------
 def fmt_float(x, nd=4):
     try:
@@ -318,45 +312,33 @@ def main():
     st.set_page_config(page_title="Métricas de Prima por Cobertura", page_icon="📊", layout="wide")
     st.markdown(EXECUTIVE_CSS, unsafe_allow_html=True)
 
-    # Header ejecutivo con logo y título
+    # Header
     top_logo, top_title = st.columns([1, 6])
     with top_logo:
         if LOGO_URL:
-            st.image(LOGO_URL, width=72)
+            st.image(LOGO_URL, width=64)
     with top_title:
         st.markdown("<h1 class='title-text'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
         st.markdown("<span style='color:#6b7280'>Frecuencia · Severidad · Prima esperada</span>", unsafe_allow_html=True)
 
-    # Cargar módulo remoto si se configuró REMOTE_PY_URL
+    # Datos
     mod = load_remote_module(REMOTE_PY_URL, REMOTE_MODULE_NAME)
-
-    # Datos: intento módulo remoto -> fallback
-    data = try_remote_get_metrics(mod)
-    if data is None:
-        data = get_fallback_data()
+    data = try_remote_get_metrics(mod) or get_fallback_data()
 
     header_metrics: Dict[str, Dict[str, float]] = data["header_metrics"]
     cambio_por_cobertura: Dict[str, pd.DataFrame] = data.get("cambio_por_cobertura", {})
     cambio_total: pd.DataFrame = data.get("cambio_total", pd.DataFrame())
 
-    # ------------------------------------------------------------------
-    # FILA SUPERIOR (horizontal):
-    #   - Izquierda: selector "Cobertura"
-    #   - Derecha: "Métricas clave" (tarjetas)
-    # ------------------------------------------------------------------
+    # FILA SUPERIOR: Izq selector / Der métricas (compacto)
     row1_left, row1_right = st.columns([1.2, 3.8], gap="large")
-
     with row1_left:
         with st.container(border=True):
             st.markdown("### Cobertura")
             cobertura = st.selectbox(
-                "Selecciona cobertura",
-                COBERTURAS,
-                index=0,
+                "Selecciona cobertura", COBERTURAS, index=0,
                 label_visibility="collapsed",
                 format_func=lambda s: s.replace("_siniestros_monto", "").replace("_", " ")
             )
-
     with row1_right:
         with st.container(border=True):
             st.markdown("### Métricas clave")
@@ -367,9 +349,7 @@ def main():
             with g3: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan))
             with g4: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan))
 
-    # =====================
-    # CARGA DEL EXCEL (SIEMPRE DESDE URL CONFIGURADA)
-    # =====================
+    # Excel
     df_all = None
     try:
         df_all = read_excel_from_url(EXCEL_URL)
@@ -378,14 +358,9 @@ def main():
 
     if df_all is not None:
         try:
-            # Construir perfil y asignar niveles FIJOS
             df_all = build_perfil(df_all)
 
-            # ------------------------------------------------------------------
-            # FILA MEDIA:
-            #   - Izquierda: Mapa de riesgo por cobertura (scatter con contorno blanco)
-            #   - Derecha: Barras (Cambio porcentual -> Factor) para VARS_BIN de la cobertura
-            # ------------------------------------------------------------------
+            # FILA MEDIA: Izq scatter / Der barras selección
             row2_left, row2_right = st.columns([2.5, 2.0], gap="large")
 
             with row2_left:
@@ -393,6 +368,7 @@ def main():
                     st.markdown("### Mapa de riesgo por cobertura")
                     fig_scatter, df_sample = make_scatter_matplotlib(df_all, cobertura, sample_max=8000)
                     st.pyplot(fig_scatter, use_container_width=True)
+                    plt.close(fig_scatter)
 
                     st.download_button(
                         label="⬇️ Descargar datos de la muestra graficada (CSV)",
@@ -405,41 +381,42 @@ def main():
                 with st.container(border=True):
                     st.markdown("### Cambio porcentual (selección) → Factor")
                     df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable", "%Cambio_prima"])).copy()
-                    # Filtrar solo las variables seleccionadas
                     df_sel = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
                     if df_sel.empty:
                         st.info("No hay datos de cambio por variable para esta cobertura.")
                     else:
-                        # Calcular Factor = 1 + %Cambio_prima/100
                         df_sel["Factor"] = (pd.to_numeric(df_sel["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
                         df_sel = df_sel[["Variable", "Factor"]].sort_values("Variable").reset_index(drop=True)
                         fig_bar_sel = plot_bars(df_sel, x_col="Variable", y_col="Factor",
-                                                title="Factor por variable (selección)", xtick_rotation=20)
+                                                title="Factor por variable (selección)",
+                                                xtick_rotation=20, width=(10.0, 6.2))
                         st.pyplot(fig_bar_sel, use_container_width=True)
+                        plt.close(fig_bar_sel)
 
-            # ------------------------------------------------------------------
-            # FILA INFERIOR (centro): Barras del Cambio total (Factor_total)
-            # ------------------------------------------------------------------
+            # FILA INFERIOR (más pequeño)
             with st.container(border=True):
                 st.markdown("### Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
                 if cambio_total is None or cambio_total.empty:
                     st.info("No hay datos de cambio total disponibles.")
                 else:
                     df_total_sel = cambio_total.copy()
-                    # Si quieres solo VARS_BIN, descomenta la línea siguiente:
+                    # Solo VARS_BIN (comenta esta línea si quieres todas)
                     df_total_sel = df_total_sel[df_total_sel["Variable"].isin(VARS_BIN)].copy()
                     if df_total_sel.empty:
                         st.info("No hay datos para las variables seleccionadas en el cambio total.")
                     else:
                         df_total_sel = df_total_sel[["Variable", "Factor_total"]].sort_values("Variable").reset_index(drop=True)
+                        # Figura intencionalmente más baja
                         fig_bar_total = plot_bars(df_total_sel, x_col="Variable", y_col="Factor_total",
-                                                  title="Factor total por variable (ponderado por prima base)", xtick_rotation=20)
+                                                  title="Factor total por variable (ponderado por prima base)",
+                                                  xtick_rotation=20, width=(9.0, 3.8))
                         st.pyplot(fig_bar_total, use_container_width=True)
+                        plt.close(fig_bar_total)
 
         except Exception as e:
             st.error(f"Error al preparar la visualización: {e}")
 
-    # ==== PIE DE PÁGINA ====
+    # Footer
     st.markdown(f"""
     <div class="footer">
         © {datetime.now().year} Desarrollado con 
