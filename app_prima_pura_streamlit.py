@@ -355,6 +355,61 @@ if st.button("🔢 Calcular prima pura"):
         """, unsafe_allow_html=True)
         st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
+                # ==========================================================
+        # 🧭 CLASIFICACIÓN DEL PERFIL DE RIESGO SEGÚN TABLA FINAL
+        # ==========================================================
+
+        # --- Crear la combinación binaria con las mismas reglas del clustering ---
+        perfil_base = (
+            str(int(_to_int(dos_mas))) + "_" +
+            str(int(_to_int(en_campus))) + "_" +
+            str(int(_to_int(extintor)))
+        )
+
+        # --- Buscar el nivel de riesgo correspondiente en la tabla_final ---
+        try:
+            fila_match = tabla_final.loc[tabla_final["Combinación binaria"] == perfil_base]
+            if not fila_match.empty:
+                nivel_riesgo = fila_match["nivel_riesgo"].iloc[0]
+                prima_media_ref = fila_match["Prima esperada promedio"].iloc[0]
+                score_lineal = fila_match["Score lineal"].iloc[0]
+            else:
+                nivel_riesgo = "Sin clasificar"
+                prima_media_ref = np.nan
+                score_lineal = np.nan
+        except Exception:
+            nivel_riesgo = "Sin clasificar"
+            prima_media_ref = np.nan
+            score_lineal = np.nan
+
+        # --- Mostrar resultado en Streamlit ---
+        color_riesgo = {
+            "Bajo": "#C7E8CA",
+            "Medio-bajo": "#F5F3A4",
+            "Medio": "#FFD166",
+            "Medio-alto": "#F4A261",
+            "Alto": "#E63946"
+        }.get(nivel_riesgo, "#DDDDDD")
+
+        st.markdown(f"""
+        <div style="
+            background-color:{color_riesgo};
+            padding:1rem;
+            border-radius:12px;
+            text-align:center;
+            margin-top:15px;
+            box-shadow:0 2px 6px rgba(0,0,0,0.15);">
+            <h3 style="color:#003366; font-weight:700;">🏷️ Clasificación de Riesgo</h3>
+            <p style="font-size:1.1rem; margin-bottom:0.3rem;">
+                <strong>Nivel:</strong> {nivel_riesgo}
+            </p>
+            <p style="margin:0;">
+                <strong>Score lineal:</strong> {score_lineal:.3f} <br>
+                <strong>Prima esperada promedio del grupo:</strong> ${prima_media_ref:,.0f}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
         # ==== DESCARGA ====
         st.download_button(
             "⬇️ Descargar CSV",
