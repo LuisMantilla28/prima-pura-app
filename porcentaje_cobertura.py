@@ -52,7 +52,7 @@ EXECUTIVE_CSS = """
 html, body, [class*="css"], .stMarkdown, .stText, .stDataFrame {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
-.block-container { padding-top: 0.9rem; padding-bottom: 1.4rem; }
+.block-container { padding-top: 0.9rem; padding-bottom: 1.0rem; }
 h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
 
 /* KPI más compactos (misma altura visual que el bloque "Cobertura") */
@@ -66,6 +66,26 @@ h1, .title-text { font-weight: 700; letter-spacing: -0.02em; }
 h3, h4 { margin: 0.2rem 0 0.6rem 0; }
 .caption { color: #6b7280 !important; text-transform: uppercase; letter-spacing: .03em; font-size: .78rem; }
 .footer { margin-top: 0.6rem; color:#6b7280; }
+
+/* ====== Forzar tamaño visible de imágenes (evita miniaturas) ====== */
+.plot-lg img {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 480px;   /* alto mínimo confortable para el scatter */
+  display: block;
+}
+.plot-md img {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 420px;   /* barras selección */
+  display: block;
+}
+.plot-sm img {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 280px;   /* barras inferiores más pequeña */
+  display: block;
+}
 </style>
 """
 
@@ -167,6 +187,16 @@ def fig_to_stimage(fig, *, width_px: int = 1600, height_px: int | None = None, d
     fig.savefig(buf, format="png", dpi=dpi, bbox_inches=None, pad_inches=0.1)
     buf.seek(0)
     st.image(buf, use_container_width=True)
+
+def show_fig(fig, size: str = "lg", *, width_px: int, height_px: int, dpi: int = 200):
+    """
+    Envuelve la imagen en un div con clase de tamaño (CSS) y la renderiza grande.
+    size ∈ {"lg", "md", "sm"}
+    """
+    cls = {"lg": "plot-lg", "md": "plot-md", "sm": "plot-sm"}.get(size, "plot-lg")
+    st.markdown(f"<div class='{cls}'>", unsafe_allow_html=True)
+    fig_to_stimage(fig, width_px=width_px, height_px=height_px, dpi=dpi)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------
 # PLOTS (matplotlib)
@@ -386,7 +416,7 @@ def main():
                 with st.container(border=True):
                     st.markdown("### Mapa de riesgo por cobertura")
                     fig_scatter, df_sample = make_scatter_matplotlib(df_all, cobertura, sample_max=8000)
-                    fig_to_stimage(fig_scatter, width_px=1600, height_px=900, dpi=200)   # 👈 render robusto
+                    show_fig(fig_scatter, size="lg", width_px=1600, height_px=900, dpi=200)   # 👈 robusto
                     plt.close(fig_scatter)
 
                     st.download_button(
@@ -411,7 +441,7 @@ def main():
                             title="Factor por variable (selección)",
                             xtick_rotation=20, width=(11.0, 6.2)
                         )
-                        fig_to_stimage(fig_bar_sel, width_px=1400, height_px=760, dpi=200)  # 👈 render robusto
+                        show_fig(fig_bar_sel, size="md", width_px=1400, height_px=760, dpi=200)  # 👈 robusto
                         plt.close(fig_bar_sel)
 
             # FILA INFERIOR (más pequeña)
@@ -431,7 +461,7 @@ def main():
                             title="Factor total por variable (ponderado por prima base)",
                             xtick_rotation=20, width=(10.0, 3.6)
                         )
-                        fig_to_stimage(fig_bar_total, width_px=1200, height_px=430, dpi=200)  # 👈 render robusto
+                        show_fig(fig_bar_total, size="sm", width_px=1200, height_px=430, dpi=200)  # 👈 robusto
                         plt.close(fig_bar_total)
 
         except Exception as e:
