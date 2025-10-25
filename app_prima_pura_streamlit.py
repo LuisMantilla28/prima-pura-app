@@ -356,33 +356,30 @@ if st.button("🔢 Calcular prima pura"):
         st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
                 # ==========================================================
-        # 🧭 CLASIFICACIÓN DEL PERFIL DE RIESGO SEGÚN TABLA FINAL
+        # 🧭 CLASIFICACIÓN VISUAL DEL PERFIL DE RIESGO (profesional)
         # ==========================================================
+        inq = int(_to_int(dos_mas))
+        camp = int(_to_int(en_campus))
+        ext = int(_to_int(extintor))
 
-        # --- Crear la combinación binaria con las mismas reglas del clustering ---
-        perfil_base = (
-            str(int(_to_int(dos_mas))) + "_" +
-            str(int(_to_int(en_campus))) + "_" +
-            str(int(_to_int(extintor)))
-        )
+        # --- Determinar nivel de riesgo según combinación ---
+        if inq == 1 and camp == 1 and ext == 0:
+            nivel_riesgo = "Alto"
+            explicacion = "Vivir fuera del campus y tener 2 o más inquilinos aumenta la exposición al riesgo, especialmente sin extintor."
+        elif inq == 1 and camp == 0 and ext == 0:
+            nivel_riesgo = "Alto"
+            explicacion = "Compartir vivienda con varios inquilinos y no contar con extintor incrementa la probabilidad y severidad de siniestros."
+        elif (inq == 1 and ext == 1 and camp == 0) or (inq == 0 and camp == 1 and ext == 0):
+            nivel_riesgo = "Medio-alto"
+            explicacion = "Aunque cuenta con alguna medida de seguridad, vivir fuera del campus o tener varios inquilinos eleva el riesgo."
+        elif (inq == 0 and camp == 1 and ext == 1) or (inq == 0 and camp == 0 and ext == 0):
+            nivel_riesgo = "Medio-bajo"
+            explicacion = "El riesgo es moderado: vive solo o dentro del campus, pero con algunas condiciones que requieren precaución."
+        else:
+            nivel_riesgo = "Bajo"
+            explicacion = "Cuenta con medidas de seguridad (extintor) y condiciones de bajo riesgo."
 
-        # --- Buscar el nivel de riesgo correspondiente en la tabla_final ---
-        try:
-            fila_match = tabla_final.loc[tabla_final["Combinación binaria"] == perfil_base]
-            if not fila_match.empty:
-                nivel_riesgo = fila_match["nivel_riesgo"].iloc[0]
-                prima_media_ref = fila_match["Prima esperada promedio"].iloc[0]
-                score_lineal = fila_match["Score lineal"].iloc[0]
-            else:
-                nivel_riesgo = "Sin clasificar"
-                prima_media_ref = np.nan
-                score_lineal = np.nan
-        except Exception:
-            nivel_riesgo = "Sin clasificar"
-            prima_media_ref = np.nan
-            score_lineal = np.nan
-
-        # --- Mostrar resultado en Streamlit ---
+        # --- Asignar color según nivel ---
         color_riesgo = {
             "Bajo": "#C7E8CA",
             "Medio-bajo": "#F5F3A4",
@@ -391,24 +388,36 @@ if st.button("🔢 Calcular prima pura"):
             "Alto": "#E63946"
         }.get(nivel_riesgo, "#DDDDDD")
 
+        # --- Mostrar franja con animación suave ---
         st.markdown(f"""
         <div style="
             background-color:{color_riesgo};
-            padding:1rem;
-            border-radius:12px;
+            padding:1.4rem;
+            border-radius:16px;
             text-align:center;
-            margin-top:15px;
-            box-shadow:0 2px 6px rgba(0,0,0,0.15);">
-            <h3 style="color:#003366; font-weight:700;">🏷️ Clasificación de Riesgo</h3>
-            <p style="font-size:1.1rem; margin-bottom:0.3rem;">
-                <strong>Nivel:</strong> {nivel_riesgo}
-            </p>
-            <p style="margin:0;">
-                <strong>Score lineal:</strong> {score_lineal:.3f} <br>
-                <strong>Prima esperada promedio del grupo:</strong> ${prima_media_ref:,.0f}
+            margin-top:25px;
+            margin-bottom:15px;
+            box-shadow:0 4px 12px rgba(0,0,0,0.15);
+            animation: fadeIn 1.2s ease-in-out;
+        ">
+            <h3 style="color:#003366; font-weight:800; margin-bottom:0.4rem; font-size:1.4rem;">
+                🏷️ Nivel de Riesgo: {nivel_riesgo}
+            </h3>
+            <p style="font-size:1.05rem; color:#002D62; margin:0;">
+                {explicacion}
             </p>
         </div>
+
+        <style>
+        @keyframes fadeIn {{
+            0% {{opacity: 0; transform: translateY(10px);}}
+            100% {{opacity: 1; transform: translateY(0);}}
+        }}
+        </style>
         """, unsafe_allow_html=True)
+
+
+       
 
         # ==== DESCARGA ====
         st.download_button(
