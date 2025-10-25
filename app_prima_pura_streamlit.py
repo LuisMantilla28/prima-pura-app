@@ -355,7 +355,8 @@ if st.button("🔢 Calcular prima pura"):
         """, unsafe_allow_html=True)
         st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
-           # ==========================================================
+
+        # ==========================================================
         # 🧭 CLASIFICACIÓN CON BARRA DE RIESGO Y VIÑETAS
         # ==========================================================
         inq = int(_to_int(dos_mas))
@@ -456,6 +457,7 @@ if st.button("🔢 Calcular prima pura"):
         """, unsafe_allow_html=True)
 
 
+    
         # ==== DESCARGA ====
         st.download_button(
             "⬇️ Descargar CSV",
