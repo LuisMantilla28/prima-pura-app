@@ -1,9 +1,8 @@
 # app.py
 # -------------------------------------------------------------
 # Dashboard de Coberturas y Métricas
-# - Mapa de riesgo (Plotly, responsive)
-# - Tablas originales para "Cambio porcentual (selección) → Factor"
-#   y "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)"
+# - Mapa de riesgo (Plotly, responsive, tamaño reducido)
+# - Tablas "Factores de riesgo" (selección) y "Cambio TOTAL" sin %Cambio
 # -------------------------------------------------------------
 # Requisitos:
 #   pip install streamlit requests pandas numpy openpyxl scipy plotly
@@ -22,7 +21,6 @@ import requests
 import streamlit as st
 from datetime import datetime
 
-# Plotly (gráfico responsive para el scatter)
 import plotly.express as px
 
 # ================================
@@ -149,20 +147,19 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str):
     return col_freq, col_sev, col_pri
 
 # -------------------------------------------------------------
-# PLOT: Scatter Plotly (responsive, grande desde el inicio)
+# PLOT: Scatter Plotly (responsive, más pequeño)
 # -------------------------------------------------------------
 def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
     col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
     df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
 
-    # normalizar tamaños (robusto)
+    # normalizar tamaños (robusto) y hacerlos más pequeños
     s = pd.to_numeric(df_plot[col_pri], errors="coerce").fillna(0).values
     s = np.clip(s, np.nanpercentile(s, 5), np.nanpercentile(s, 95))
-    size_min, size_max = 6, 26
+    size_min, size_max = 4, 16  # más chico que antes
     s_norm = size_min + (s - s.min()) * (size_max - size_min) / (s.max() - s.min() + 1e-9)
 
     df_plot = df_plot.assign(_size_=s_norm)
-
     c_label = cobertura.replace("_siniestros_monto", "").replace("_", " ").capitalize()
 
     fig = px.scatter(
@@ -177,8 +174,8 @@ def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
     )
     fig.update_traces(marker=dict(line=dict(width=1, color="white"), opacity=0.9))
     fig.update_layout(
-        height=460,
-        margin=dict(l=10, r=10, t=60, b=10),
+        height=340,  # 👈 más pequeño y proporcional
+        margin=dict(l=10, r=10, t=50, b=10),
         legend_title_text="Nivel de riesgo",
         plot_bgcolor="#FBFBFB",
     )
@@ -287,7 +284,6 @@ def kpi(label: str, value):
     )
 
 def render_table(df: pd.DataFrame, caption: str, column_config: Dict[str, st.column_config.Column] = None):
-    """Tabla con formato numérico para % y factores."""
     st.caption(caption)
     st.dataframe(
         df,
@@ -360,7 +356,7 @@ def main():
                     fig_scatter = scatter_plotly(df_all, cobertura, sample_max=8000)
                     st.plotly_chart(fig_scatter, use_container_width=True, config={"displayModeBar": False})
 
-                    # CSV de la muestra (todas las filas de la cobertura con columnas necesarias)
+                    # CSV de la muestra
                     col_freq, col_sev, col_pri = ensure_pred_cols(df_all, cobertura)
                     df_plot = df_all[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
                     st.download_button(
@@ -372,26 +368,36 @@ def main():
 
             with row2_right:
                 with st.container(border=True):
-                    st.markdown("### Cambio porcentual (selección) → Factor")
-                    df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable", "%Cambio_prima"])).copy()
+                    st.markdown("### Factores de riesgo")
+                    df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable"])).copy()
+                    # Selección de variables y cálculo de Factor
+                    if "%Cambio_prima" in df_cob.columns:
+                        df_cob["Factor"] = (pd.to_numeric(df_cob["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
+                    # Filtrar solo VARS_BIN y quitar %Cambio_prima
                     df_sel = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
                     if df_sel.empty:
-                        st.info("No hay datos de cambio por variable para esta cobertura.")
+                        st.info("No hay datos de variables seleccionadas para esta cobertura.")
                     else:
-                        # calcular Factor y ordenar por Variable
-                        df_sel["Factor"] = (pd.to_numeric(df_sel["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
-                        df_sel = df_sel[["Variable", "Factor", "%Cambio_prima"]].sort_values("Variable").reset_index(drop=True)
-
+                        cols = ["Variable", "Factor"] if "Factor" in df_sel.columns else ["Variable"]
+                        df_sel = df_sel[cols].sort_values("Variable").reset_index(drop=True)
                         render_table(
                             df_sel,
-                            "Cambio porcentual de la PRIMA ESPERADA por variable (selección)",
-                            column_config={
-                                "Factor": st.column_config.NumberColumn("Factor", format="%.4f"),
-                                "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
-                            }
+                            "Factores de riesgo (selección)",
+                            column_config={"Factor": st.column_config.NumberColumn("Factor", format="%.4f")}
                         )
 
-            # FILA INFERIOR: TABLA total (más compacta visualmente)
+                        # Bullets interpretativos del Factor
+                        st.markdown(
+                            """
+                            **¿Cómo interpretar el _Factor_?**
+                            - **Factor > 1.00**: incrementa la prima esperada (p. ej., 1.25 ⇒ +25%).  
+                            - **≈ 1.00**: efecto neutro o marginal sobre la prima.  
+                            - **< 1.00**: reduce la prima esperada (p. ej., 0.80 ⇒ −20%).  
+                            - Los factores se estiman condicionales al modelo y a la cobertura seleccionada.
+                            """
+                        )
+
+            # FILA INFERIOR: TABLA total (sin %Cambio_total)
             with st.container(border=True):
                 st.markdown("### Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
                 if cambio_total is None or cambio_total.empty:
@@ -401,14 +407,11 @@ def main():
                     if df_total_sel.empty:
                         st.info("No hay datos para las variables seleccionadas en el cambio total.")
                     else:
-                        df_total_sel = df_total_sel[["Variable", "Factor_total", "%Cambio_total"]].sort_values("Variable").reset_index(drop=True)
+                        df_total_sel = df_total_sel[["Variable", "Factor_total"]].sort_values("Variable").reset_index(drop=True)
                         render_table(
                             df_total_sel,
-                            "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)",
-                            column_config={
-                                "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
-                                "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
-                            }
+                            "Factores totales ponderados por prima base",
+                            column_config={"Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f")}
                         )
 
         except Exception as e:
