@@ -1,7 +1,9 @@
 # app.py
 # -------------------------------------------------------------
-# App Streamlit ejecutivo para métricas y coberturas
-# + mapas (scatter) y barras con Plotly (responsive).
+# Dashboard de Coberturas y Métricas
+# - Mapa de riesgo (Plotly, responsive)
+# - Tablas originales para "Cambio porcentual (selección) → Factor"
+#   y "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)"
 # -------------------------------------------------------------
 # Requisitos:
 #   pip install streamlit requests pandas numpy openpyxl scipy plotly
@@ -12,7 +14,7 @@ import io
 import os
 import sys
 import tempfile
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -20,9 +22,8 @@ import requests
 import streamlit as st
 from datetime import datetime
 
-# === Plotly (gráficos responsivos y estables en primer render) ===
+# Plotly (gráfico responsive para el scatter)
 import plotly.express as px
-import plotly.graph_objects as go
 
 # ================================
 # CONFIG
@@ -148,18 +149,18 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str):
     return col_freq, col_sev, col_pri
 
 # -------------------------------------------------------------
-# PLOTS — Plotly (evita “miniaturas” en primer render)
+# PLOT: Scatter Plotly (responsive, grande desde el inicio)
 # -------------------------------------------------------------
-def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000) -> go.Figure:
+def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
     col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
     df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
 
     # normalizar tamaños (robusto)
     s = pd.to_numeric(df_plot[col_pri], errors="coerce").fillna(0).values
     s = np.clip(s, np.nanpercentile(s, 5), np.nanpercentile(s, 95))
-    # tamaño de marcador en px (Plotly usa tamaño en px, no área):
     size_min, size_max = 6, 26
     s_norm = size_min + (s - s.min()) * (size_max - size_min) / (s.max() - s.min() + 1e-9)
+
     df_plot = df_plot.assign(_size_=s_norm)
 
     c_label = cobertura.replace("_siniestros_monto", "").replace("_", " ").capitalize()
@@ -168,15 +169,13 @@ def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000) -> 
         df_plot,
         x=pd.to_numeric(df_plot[col_freq], errors="coerce"),
         y=pd.to_numeric(df_plot[col_sev], errors="coerce"),
-        size="_size_",  # ya normalizado
+        size="_size_",
         color="nivel_riesgo",
         color_discrete_map=COLOR_MAP,
         hover_data={col_pri: ':.2f', col_freq: ':.3f', col_sev: ':.2f', "nivel_riesgo": True, "_size_": False},
         title=f"Mapa de riesgo – {c_label}",
     )
-    # contorno blanco
-    fig.update_traces(marker=dict(line=dict(width=1, color="white"), opacity=0.9), selector=dict(mode="markers"))
-
+    fig.update_traces(marker=dict(line=dict(width=1, color="white"), opacity=0.9))
     fig.update_layout(
         height=460,
         margin=dict(l=10, r=10, t=60, b=10),
@@ -185,26 +184,6 @@ def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000) -> 
     )
     fig.update_xaxes(title_text="Frecuencia esperada E[N]", gridcolor="rgba(0,0,0,0.15)", zeroline=False)
     fig.update_yaxes(title_text="Severidad esperada E[Y | N>0]", gridcolor="rgba(0,0,0,0.15)", zeroline=False)
-
-    return fig
-
-def bars_plotly(df: pd.DataFrame, x_col: str, y_col: str, title: str, height: int = 420) -> go.Figure:
-    fig = px.bar(
-        df,
-        x=x_col, y=y_col,
-        text=y_col,
-        title=title,
-    )
-    fig.update_traces(texttemplate="%{text:.4f}", textposition="outside", cliponaxis=False)
-    fig.update_layout(
-        height=height,
-        margin=dict(l=10, r=10, t=60, b=40),
-        xaxis_tickangle=20,
-        plot_bgcolor="#FBFBFB",
-        yaxis_title=y_col.replace("_", " "),
-        xaxis_title=x_col.replace("_", " "),
-    )
-    fig.update_yaxes(gridcolor="rgba(0,0,0,0.15)", zeroline=False)
     return fig
 
 # -------------------------------------------------------------
@@ -307,6 +286,16 @@ def kpi(label: str, value):
         unsafe_allow_html=True,
     )
 
+def render_table(df: pd.DataFrame, caption: str, column_config: Dict[str, st.column_config.Column] = None):
+    """Tabla con formato numérico para % y factores."""
+    st.caption(caption)
+    st.dataframe(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config=column_config or {}
+    )
+
 # ================================
 # APP
 # ================================
@@ -362,7 +351,7 @@ def main():
         try:
             df_all = build_perfil(df_all)
 
-            # FILA MEDIA: Izq scatter / Der barras selección
+            # FILA MEDIA: Izq scatter / Der TABLA selección
             row2_left, row2_right = st.columns([2.5, 2.0], gap="large")
 
             with row2_left:
@@ -371,7 +360,7 @@ def main():
                     fig_scatter = scatter_plotly(df_all, cobertura, sample_max=8000)
                     st.plotly_chart(fig_scatter, use_container_width=True, config={"displayModeBar": False})
 
-                    # CSV de la muestra graficada
+                    # CSV de la muestra (todas las filas de la cobertura con columnas necesarias)
                     col_freq, col_sev, col_pri = ensure_pred_cols(df_all, cobertura)
                     df_plot = df_all[[col_freq, col_sev, col_pri, "nivel_riesgo"]].copy()
                     st.download_button(
@@ -389,28 +378,38 @@ def main():
                     if df_sel.empty:
                         st.info("No hay datos de cambio por variable para esta cobertura.")
                     else:
+                        # calcular Factor y ordenar por Variable
                         df_sel["Factor"] = (pd.to_numeric(df_sel["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
-                        df_sel = df_sel[["Variable", "Factor"]].sort_values("Variable").reset_index(drop=True)
-                        fig_bar_sel = bars_plotly(df_sel, x_col="Variable", y_col="Factor",
-                                                  title="Factor por variable (selección)", height=440)
-                        st.plotly_chart(fig_bar_sel, use_container_width=True, config={"displayModeBar": False})
+                        df_sel = df_sel[["Variable", "Factor", "%Cambio_prima"]].sort_values("Variable").reset_index(drop=True)
 
-            # FILA INFERIOR (más pequeña)
+                        render_table(
+                            df_sel,
+                            "Cambio porcentual de la PRIMA ESPERADA por variable (selección)",
+                            column_config={
+                                "Factor": st.column_config.NumberColumn("Factor", format="%.4f"),
+                                "%Cambio_prima": st.column_config.NumberColumn("%Cambio prima", format="%.4f"),
+                            }
+                        )
+
+            # FILA INFERIOR: TABLA total (más compacta visualmente)
             with st.container(border=True):
                 st.markdown("### Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)")
                 if cambio_total is None or cambio_total.empty:
                     st.info("No hay datos de cambio total disponibles.")
                 else:
-                    df_total_sel = cambio_total.copy()
-                    df_total_sel = df_total_sel[df_total_sel["Variable"].isin(VARS_BIN)].copy()
+                    df_total_sel = cambio_total[cambio_total["Variable"].isin(VARS_BIN)].copy()
                     if df_total_sel.empty:
                         st.info("No hay datos para las variables seleccionadas en el cambio total.")
                     else:
-                        df_total_sel = df_total_sel[["Variable", "Factor_total"]].sort_values("Variable").reset_index(drop=True)
-                        fig_bar_total = bars_plotly(df_total_sel, x_col="Variable", y_col="Factor_total",
-                                                    title="Factor total por variable (ponderado por prima base)",
-                                                    height=320)  # más pequeño
-                        st.plotly_chart(fig_bar_total, use_container_width=True, config={"displayModeBar": False})
+                        df_total_sel = df_total_sel[["Variable", "Factor_total", "%Cambio_total"]].sort_values("Variable").reset_index(drop=True)
+                        render_table(
+                            df_total_sel,
+                            "Cambio de la PRIMA ESPERADA TOTAL (ponderado por prima base)",
+                            column_config={
+                                "Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f"),
+                                "%Cambio_total": st.column_config.NumberColumn("%Cambio total", format="%.4f"),
+                            }
+                        )
 
         except Exception as e:
             st.error(f"Error al preparar la visualización: {e}")
