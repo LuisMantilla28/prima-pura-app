@@ -147,16 +147,26 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str) -> Tuple[str, str, str]:
     return col_freq, col_sev, col_pri
 
 # -------------------------------------------------------------
-# Helpers de visualización (clave: usar st.image con buffer PNG)
+# Helper para mostrar figuras: PNG grande (evita "miniaturas")
 # -------------------------------------------------------------
-def fig_to_stimage(fig, *, dpi: int = 220):
-    """Renderiza un fig de matplotlib como PNG en memoria y lo muestra con st.image."""
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
-    buf.seek(0)
-    # ✅ usar el parámetro vigente:
-    st.image(buf, use_container_width=True)
+def fig_to_stimage(fig, *, width_px: int = 1600, height_px: int | None = None, dpi: int = 200):
+    """
+    Renderiza un fig de matplotlib a un PNG grande y lo muestra con st.image.
+    Si no pasas height_px, se respeta la relación de aspecto actual del fig.
+    """
+    if height_px is None:
+        w_in, h_in = fig.get_size_inches()
+        aspect = h_in / max(w_in, 1e-9)
+        height_px = int(width_px * aspect)
 
+    # Ajustar tamaño físico del fig para producir exactamente esos píxeles
+    fig.set_size_inches(width_px / dpi, height_px / dpi, forward=True)
+
+    buf = io.BytesIO()
+    # Importante: NO usar bbox_inches="tight" (encoge la imagen inicial)
+    fig.savefig(buf, format="png", dpi=dpi, bbox_inches=None, pad_inches=0.1)
+    buf.seek(0)
+    st.image(buf, use_container_width=True)
 
 # -------------------------------------------------------------
 # PLOTS (matplotlib)
@@ -173,8 +183,7 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
 
     colores = [COLOR_MAP.get(n, "#999999") for n in df_plot["nivel_riesgo"].values]
 
-    # tamaño generoso; no dependemos de use_container_width
-    fig, ax = plt.subplots(figsize=(11.5, 6.6))  # ancho x alto
+    fig, ax = plt.subplots(figsize=(11.5, 6.6))  # tamaño de trabajo (se recalibra al exportar)
     ax.scatter(
         pd.to_numeric(df_plot[col_freq], errors="coerce"),
         pd.to_numeric(df_plot[col_sev], errors="coerce"),
@@ -192,7 +201,7 @@ def make_scatter_matplotlib(df: pd.DataFrame, cobertura: str, sample_max: int = 
     ax.grid(True, linestyle="--", alpha=0.35)
     ax.set_facecolor("#FBFBFB")
 
-    # Leyenda dentro del eje (no comprime el canvas)
+    # Leyenda interior (evita comprimir canvas general)
     legend_patches = [mpatches.Patch(color=COLOR_MAP[n], label=n) for n in NIVELES_RIESGO]
     ax.legend(handles=legend_patches, title="Nivel de riesgo", loc="upper left",
               frameon=True, fontsize=9, title_fontsize=10)
@@ -377,7 +386,7 @@ def main():
                 with st.container(border=True):
                     st.markdown("### Mapa de riesgo por cobertura")
                     fig_scatter, df_sample = make_scatter_matplotlib(df_all, cobertura, sample_max=8000)
-                    fig_to_stimage(fig_scatter, dpi=220)   # 👈 render robusto
+                    fig_to_stimage(fig_scatter, width_px=1600, height_px=900, dpi=200)   # 👈 render robusto
                     plt.close(fig_scatter)
 
                     st.download_button(
@@ -397,10 +406,12 @@ def main():
                     else:
                         df_sel["Factor"] = (pd.to_numeric(df_sel["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
                         df_sel = df_sel[["Variable", "Factor"]].sort_values("Variable").reset_index(drop=True)
-                        fig_bar_sel = plot_bars(df_sel, x_col="Variable", y_col="Factor",
-                                                title="Factor por variable (selección)",
-                                                xtick_rotation=20, width=(11.0, 6.2))
-                        fig_to_stimage(fig_bar_sel, dpi=220)  # 👈 render robusto
+                        fig_bar_sel = plot_bars(
+                            df_sel, x_col="Variable", y_col="Factor",
+                            title="Factor por variable (selección)",
+                            xtick_rotation=20, width=(11.0, 6.2)
+                        )
+                        fig_to_stimage(fig_bar_sel, width_px=1400, height_px=760, dpi=200)  # 👈 render robusto
                         plt.close(fig_bar_sel)
 
             # FILA INFERIOR (más pequeña)
@@ -415,11 +426,12 @@ def main():
                         st.info("No hay datos para las variables seleccionadas en el cambio total.")
                     else:
                         df_total_sel = df_total_sel[["Variable", "Factor_total"]].sort_values("Variable").reset_index(drop=True)
-                        # Figura intencionalmente más baja
-                        fig_bar_total = plot_bars(df_total_sel, x_col="Variable", y_col="Factor_total",
-                                                  title="Factor total por variable (ponderado por prima base)",
-                                                  xtick_rotation=20, width=(10.0, 3.6))
-                        fig_to_stimage(fig_bar_total, dpi=220)  # 👈 render robusto
+                        fig_bar_total = plot_bars(
+                            df_total_sel, x_col="Variable", y_col="Factor_total",
+                            title="Factor total por variable (ponderado por prima base)",
+                            xtick_rotation=20, width=(10.0, 3.6)
+                        )
+                        fig_to_stimage(fig_bar_total, width_px=1200, height_px=430, dpi=200)  # 👈 render robusto
                         plt.close(fig_bar_total)
 
         except Exception as e:
