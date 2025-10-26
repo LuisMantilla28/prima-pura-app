@@ -331,7 +331,7 @@ def main():
     # FILA SUPERIOR: Izq selector / Der métricas (compacto)
     row1_left, row1_right = st.columns([1.2, 3.8], gap="large")
     with row1_left:
-        with st.container(border=True):
+        with st.container(border=False):
             st.markdown("### Cobertura")
             cobertura = st.selectbox(
                 "Selecciona cobertura", COBERTURAS, index=0,
