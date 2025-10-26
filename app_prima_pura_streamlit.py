@@ -289,84 +289,86 @@ with col2:
     genero = st.selectbox("⚧️ Género", ["Masculino", "Femenino", "Otro", "No respuesta"], index=0)
     extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
 
-
-    # ==== BOTÓN DE CÁLCULO ====
-if st.button("🔢 Calcular prima pura"):
-    nuevo = pd.DataFrame({
-        'año_cursado': [anio],
-        'estudios_area': [area],
-        '2_o_mas_inquilinos': [_to_int(dos_mas)],
-        'en_campus': [_to_int(en_campus)],
-        'genero': [genero],
-        'extintor_incendios': [_to_int(extintor)],
-        'calif_promedio': [calif_prom],
-        'distancia_al_campus': [dist_campus]
-    })
-
-    try:
-        df_pred = predecir_prima_pura_total(
-            nuevo, NUM_COLS, CAT_COLS, COBERTURAS, preprocess, modelos_freq, modelos_sev
-        )
-        st.session_state["df_pred"] = df_pred  # guardamos la predicción
-        st.session_state["prima_pura_total"] = df_pred["prima_pura_total"].iloc[0]
-        st.session_state["calculada"] = True
-        st.success("✅ Predicción realizada con éxito")
-    except Exception as e:
-        st.error(f"Error al predecir: {e}")
-        st.stop()
-
-# Mostrar resultados si ya se calculó
-if st.session_state.get("calculada", False):
-
-    df_pred = st.session_state["df_pred"]
-
-    # ==== TABLA (Plotly) ====
-    TITULOS = {
-        "Gastos_Adicionales_siniestros_monto": "💼 Gastos Adicionales",
-        "Contenidos_siniestros_monto": "🏠 Contenidos",
-        "Resp_Civil_siniestros_monto": "⚖️ Responsabilidad Civil",
-        "Gastos_Medicos_RC_siniestros_monto": "🩺 Gastos Médicos RC",
-    }
-    headers = [f"<b>{TITULOS.get(c, c)}</b>" for c in COBERTURAS]
-    cells = [df_pred[c].round(4) for c in COBERTURAS]
-
-    import plotly.graph_objects as go
-    fig = go.Figure(data=[go.Table(
-        header=dict(values=headers, fill_color="#0055A4", align="center",
-                    font=dict(color="white", size=13)),
-        cells=dict(values=cells, fill_color="#F8FAFF", align="center",
-                   font=dict(color="#002D62", size=12))
-    )])
-    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=160)
-
-    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima por cobertura (USD)</h2>",
-                unsafe_allow_html=True)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-
-    # ==== MÉTRICA PRINCIPAL ====
-    prima_pura = st.session_state["prima_pura_total"]
-    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💰 Prima pura total (USD)</h2>",
-                unsafe_allow_html=True)
-    st.metric("", f"{prima_pura:,.4f}")
-
-    # ==== SLIDERS REACTIVOS ====
-    st.markdown("### 💸 Cálculo de Prima Comercial")
-    gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
-    utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
-    impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
-
-    factor_total = 1 + (gastos + utilidad + impuestos) / 100
-    prima_comercial = prima_pura * factor_total
-
-    st.markdown(f"""
-    | Concepto | % | Valor (USD) |
-    |-----------|---|-------------|
-    | Prima pura | — | {prima_pura:.2f} |
-    | Gastos administrativos | {gastos}% | {prima_pura*gastos/100:.2f} |
-    | Utilidad | {utilidad}% | {prima_pura*utilidad/100:.2f} |
-    | Impuestos | {impuestos}% | {prima_pura*impuestos/100:.2f} |
-    | **Prima comercial total** | — | **{prima_comercial:.2f}** |
-    """)
+    
+        # ==== BOTÓN DE CÁLCULO ====
+    if st.button("🔢 Calcular prima pura"):
+        nuevo = pd.DataFrame({
+            'año_cursado': [anio],
+            'estudios_area': [area],
+            '2_o_mas_inquilinos': [_to_int(dos_mas)],
+            'en_campus': [_to_int(en_campus)],
+            'genero': [genero],
+            'extintor_incendios': [_to_int(extintor)],
+            'calif_promedio': [calif_prom],
+            'distancia_al_campus': [dist_campus]
+        })
+    
+        try:
+            df_pred = predecir_prima_pura_total(
+                nuevo, NUM_COLS, CAT_COLS, COBERTURAS, preprocess, modelos_freq, modelos_sev
+            )
+            st.session_state["df_pred"] = df_pred  # guardamos la predicción
+            st.session_state["prima_pura_total"] = df_pred["prima_pura_total"].iloc[0]
+            st.session_state["calculada"] = True
+            st.success("✅ Predicción realizada con éxito")
+        except Exception as e:
+            st.error(f"Error al predecir: {e}")
+            st.stop()
+    
+    # Mostrar resultados si ya se calculó
+    if st.session_state.get("calculada", False):
+    
+        df_pred = st.session_state["df_pred"]
+    
+        # ==== TABLA (Plotly) ====
+        TITULOS = {
+            "Gastos_Adicionales_siniestros_monto": "💼 Gastos Adicionales",
+            "Contenidos_siniestros_monto": "🏠 Contenidos",
+            "Resp_Civil_siniestros_monto": "⚖️ Responsabilidad Civil",
+            "Gastos_Medicos_RC_siniestros_monto": "🩺 Gastos Médicos RC",
+        }
+        headers = [f"<b>{TITULOS.get(c, c)}</b>" for c in COBERTURAS]
+        cells = [df_pred[c].round(4) for c in COBERTURAS]
+    
+        import plotly.graph_objects as go
+        fig = go.Figure(data=[go.Table(
+            header=dict(values=headers, fill_color="#0055A4", align="center",
+                        font=dict(color="white", size=13)),
+            cells=dict(values=cells, fill_color="#F8FAFF", align="center",
+                       font=dict(color="#002D62", size=12))
+        )])
+        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=160)
+    
+        st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima por cobertura (USD)</h2>",
+                    unsafe_allow_html=True)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    
+        # ==== MÉTRICA PRINCIPAL ====
+        prima_pura = st.session_state["prima_pura_total"]
+        st.markdown("<h2 style='color:#002D62; font-weight:800;'>💰 Prima pura total (USD)</h2>",
+                    unsafe_allow_html=True)
+        st.metric("", f"{prima_pura:,.4f}")
+    
+        # ==== SLIDERS REACTIVOS ====
+        st.markdown("### 💸 Cálculo de Prima Comercial")
+        gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
+        utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
+        impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
+    
+        factor_total = 1 + (gastos + utilidad + impuestos) / 100
+        prima_comercial = prima_pura * factor_total
+    
+        st.markdown(f"""
+        | Concepto | % | Valor (USD) |
+        |-----------|---|-------------|
+        | Prima pura | — | {prima_pura:.2f} |
+        | Gastos administrativos | {gastos}% | {prima_pura*gastos/100:.2f} |
+        | Utilidad | {utilidad}% | {prima_pura*utilidad/100:.2f} |
+        | Impuestos | {impuestos}% | {prima_pura*impuestos/100:.2f} |
+        | **Prima comercial total** | — | **{prima_comercial:.2f}** |
+        """)
+    
+    
 
 
 
