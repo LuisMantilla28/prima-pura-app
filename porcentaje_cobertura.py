@@ -317,7 +317,7 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)  # 👈 baja un poco el logo
             st.image(LOGO_URL, width=150, use_container_width=False)  # 👈 más grande (antes era 64)
     with top_title:
-        st.markdown("<h1 class='title-text' style='margin-top:1rem;'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 class='title-text' style='margin-top:1.4rem;'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
         st.markdown("<span style='color:#6b7280'>Frecuencia · Severidad · Prima esperada</span>", unsafe_allow_html=True)
 
     # Datos
@@ -340,7 +340,7 @@ def main():
             )
     with row1_right:
         with st.container(border=True):
-            st.markdown("### Métricas clave")
+          #  st.markdown("### Métricas clave")
             metrics = header_metrics.get(cobertura, {})
             g1, g2, g3, g4 = st.columns(4)
             with g1: kpi("Media real de N", metrics.get("Media real de N", np.nan))
