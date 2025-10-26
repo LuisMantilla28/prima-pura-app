@@ -339,7 +339,7 @@ def main():
                 format_func=lambda s: s.replace("_siniestros_monto", "").replace("_", " ")
             )
     with row1_right:
-        with st.container(border=True):
+        with st.container(border=False):
           #  st.markdown("### Métricas clave")
             metrics = header_metrics.get(cobertura, {})
             g1, g2, g3, g4 = st.columns(4)
