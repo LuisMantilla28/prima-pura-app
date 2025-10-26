@@ -346,7 +346,7 @@ if st.session_state.get("calculada", False):
 
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima pura por cobertura (USD)</h2>",
                 unsafe_allow_html=True)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    #st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
     
@@ -364,12 +364,12 @@ if st.session_state.get("calculada", False):
             "🏠 Contenidos"
         ],
         "Descripción": [
-            "Cubre gastos de alojamiento temporal, transporte y manutención durante reparaciones.",
-            "Reembolsa gastos médicos a terceros por accidentes o lesiones en la vivienda asegurada.",
-            "Indemniza daños materiales o personales causados a terceros dentro o fuera del inmueble.",
-            "Protege muebles, electrodomésticos y pertenencias personales dentro de la vivienda."
+            "Cubre gastos de mudanza temporal, hotel y alimentación durante reparaciones.",
+            "Cubre gastos médicos a terceros por accidentes o lesiones en la propiedad asegurada.",
+            "Cubre al asegurado frente a demandas por daños o lesiones dentro de la vivienda",
+            "Cubre pérdida o daño de pertenencias personales, como muebles, ropa y electrodomésticos."
         ],
-        "Monto máximo (USD)": [5000, 10000, 20000, 15000],
+        "Monto máximo (USD)": [20000, 150000, 300000, 10000],
         "Prima pura (USD)": [
             df_pred["Gastos_Adicionales_siniestros_monto"].iloc[0],
             df_pred["Gastos_Medicos_RC_siniestros_monto"].iloc[0],
@@ -378,18 +378,16 @@ if st.session_state.get("calculada", False):
         ]
     })
     
-    # --- Calcular participación porcentual ---
-    df_detalle["% del total"] = (df_detalle["Prima pura (USD)"] / df_detalle["Prima pura (USD)"].sum() * 100).round(2)
-    
-    # --- Mostrar tabla con estilo azul corporativo ---
+    # --- Tabla estilizada sin columna de porcentajes ---
     st.markdown(df_detalle.style
         .set_table_styles([
-            {"selector": "thead th", "props": [("background-color", "#0055A4"), ("color", "white"), ("font-weight", "600"), ("text-align", "center")]},
+            {"selector": "thead th", "props": [("background-color", "#0055A4"), ("color", "white"),
+                                               ("font-weight", "600"), ("text-align", "center")]},
             {"selector": "tbody td", "props": [("text-align", "center"), ("color", "#002D62"), ("font-size", "0.95rem")]},
             {"selector": "tbody tr:nth-child(even)", "props": [("background-color", "#F2F6FF")]}
         ])
         .hide(axis="index")
-        .format({"Monto máximo (USD)": "{:,.0f}", "Prima pura (USD)": "{:,.2f}", "% del total": "{:.2f}%"})._repr_html_(),
+        .format({"Monto máximo (USD)": "{:,.0f}", "Prima pura (USD)": "{:,.2f}"})._repr_html_(),
         unsafe_allow_html=True
     )
     
@@ -407,13 +405,12 @@ if st.session_state.get("calculada", False):
         )]
     )
     fig_pie.update_layout(
-        title=dict(text="Distribución porcentual de la prima pura por cobertura", font=dict(size=16, color="#002D62")),
+        title=dict(text="Distribución de la prima pura por cobertura", font=dict(size=16, color="#002D62")),
         showlegend=False,
         height=350
     )
     st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
-
-
+    
 
     
     
