@@ -345,6 +345,7 @@ def main():
             st.image(LOGO_URL, width=150, use_container_width=False)
     with top_title:
         st.markdown("<h1 class='title-text' style='margin-bottom:0rem; margin-top:3.5rem;'>Risk Profiling Dashboard</h1>", unsafe_allow_html=True)
+        st.markdown("<h2 class='subtitle-text' style='margin-bottom:0rem; margin-top:3.5rem;'>Risk Profiling Dashboard</h2>", unsafe_allow_html=True)
 
     # Datos
     mod = load_remote_module(REMOTE_PY_URL, REMOTE_MODULE_NAME)
@@ -353,9 +354,10 @@ def main():
     header_metrics: Dict[str, Dict[str, float]] = data["header_metrics"]
     cambio_por_cobertura: Dict[str, pd.DataFrame] = data.get("cambio_por_cobertura", {})
     cambio_total: pd.DataFrame = data.get("cambio_total", pd.DataFrame())
+
+    
     # NUEVA TABLA: Perfiles de riesgo con color de fila
     with st.container(border=False):
-
         df_perf = get_niveles_table()
         styler = style_by_risk(df_perf)
         st.dataframe(styler, use_container_width=True, hide_index=True)
