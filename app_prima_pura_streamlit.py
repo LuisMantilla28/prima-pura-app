@@ -430,22 +430,33 @@ if st.session_state.get("calculada", False):
     
     with col_der:
         fig_pie = go.Figure(
-            data=[go.Pie(
-                labels=df_detalle["Cobertura"],
-                values=df_detalle["Prima pura (USD)"],
-                hole=0.45,
-                textinfo="label+percent",
-                marker=dict(colors=["#0078D7", "#3399FF", "#66B2FF", "#99CCFF"]),
-                hoverinfo="label+value+percent"
-            )]
-        )
+        data=[go.Pie(
+            labels=df_detalle["Cobertura"],
+            values=df_detalle["Prima pura (USD)"],
+            hole=0.45,
+            textinfo="percent",
+            marker=dict(colors=["#0078D7", "#3399FF", "#66B2FF", "#99CCFF"]),
+            hoverinfo="label+value+percent",
+            showlegend=True  # <- vuelve a mostrar leyenda
+        )]
+    )
+    
         fig_pie.update_layout(
-            title=dict(text="Distribución de la prima pura por cobertura", font=dict(size=14, color="#002D62")),
-            showlegend=False,
+            title=dict(text="Distribución de la prima pura por cobertura", font=dict(size=15, color="#002D62")),
+            showlegend=True,
+            legend=dict(
+                orientation="h",          # horizontal
+                yanchor="bottom",
+                y=-0.15,                  # baja un poco la leyenda
+                xanchor="center",
+                x=0.5,                    # centrada
+                font=dict(size=12, color="#002D62")
+            ),
             height=300,
-            margin=dict(t=20, b=10, l=0, r=0)
+            margin=dict(t=50, b=50, l=40, r=40)
         )
-        st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
+        
+        st.plotly_chart(fig_pie, use_container_width=False, config={"displayModeBar": False})
 
     # ==== MÉTRICA PRINCIPAL ====
     prima_pura = st.session_state["prima_pura_total"]
