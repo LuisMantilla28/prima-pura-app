@@ -411,7 +411,7 @@ if st.session_state.get("calculada", False):
     # ==========================================================
     # 📋 Tabla y gráfico de torta lado a lado
     # ==========================================================
-    st.markdown("<h3 style='color:#002D62; font-weight:800;'>🛡️ Detalle de coberturas y montos asegurados</h3>", unsafe_allow_html=True)
+    #st.markdown("<h3 style='color:#002D62; font-weight:800;'>🛡️ Detalle de coberturas y montos asegurados</h3>", unsafe_allow_html=True)
     
     col_izq, col_der = st.columns([1.3, 1])
     
@@ -590,6 +590,86 @@ if st.session_state.get("calculada", False):
     </style>
     """
     st.markdown(html_final, unsafe_allow_html=True)
+
+
+# ==========================================================
+# 💵 Tabla Prima Comercial + Barra de Riesgo lado a lado
+# ==========================================================
+col_izq, col_der = st.columns([1, 1.1])  # relación ajustable (más espacio a la barra)
+
+with col_izq:
+    st.markdown(f"""
+    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+    <thead style="background-color:#0055A4; color:white; font-weight:600;">
+    <tr>
+      <th style="padding:8px; text-align:center;">Concepto</th>
+      <th style="padding:8px; text-align:center;">%</th>
+      <th style="padding:8px; text-align:center;">Valor (USD)</th>
+    </tr>
+    </thead>
+    <tbody style="background-color:#F8FAFF; color:#002D62; font-size:1.05rem;">
+    <tr><td style="padding:6px;">Prima pura</td><td style="text-align:center;">—</td><td style="text-align:right;">{prima_pura:,.2f}</td></tr>
+    <tr><td style="padding:6px;">Gastos administrativos</td><td style="text-align:center;">{gastos}%</td><td style="text-align:right;">{prima_pura*gastos/100:,.2f}</td></tr>
+    <tr><td style="padding:6px;">Utilidad</td><td style="text-align:center;">{utilidad}%</td><td style="text-align:right;">{prima_pura*utilidad/100:,.2f}</td></tr>
+    <tr><td style="padding:6px;">Impuestos</td><td style="text-align:center;">{impuestos}%</td><td style="text-align:right;">{prima_pura*impuestos/100:,.2f}</td></tr>
+    <tr style="background-color:#E6F0FF; font-weight:800;">
+      <td style="padding:6px;">Prima comercial total</td><td style="text-align:center;">—</td>
+      <td style="text-align:right; color:#003366;">{prima_comercial:,.2f}</td>
+    </tr>
+    </tbody>
+    </table>
+    """, unsafe_allow_html=True)
+
+with col_der:
+    # ==========================================================
+    # 🧭 VISUALIZACIÓN DEL PERFIL DE RIESGO
+    # ==========================================================
+    niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
+    colores = ["#80CFA9", "#FFF176", "#FFD54F", "#FB8C00", "#E53935"]
+    idx = niveles.index(nivel_riesgo)
+
+    segmentos_html = "".join([
+        f"<div class='segmento' style='background:{col}; opacity:{'1' if i==idx else '0.35'};'></div>"
+        for i, col in enumerate(colores)
+    ])
+    factores_html = "".join([f"<li>{f}</li>" for f in factores])
+
+    html_final = f"""
+    <div class="tarjeta">
+        <h3 class="titulo">🏷️ Nivel de Riesgo: {nivel_riesgo}</h3>
+        <div class="barra-container">
+            <div class="barra">{segmentos_html}</div>
+            <div class="etiquetas">
+                {''.join([f"<span>{niv}</span>" for niv in niveles])}
+            </div>
+            <div class="flecha" style="left: calc({idx} * 20% + 10%);"></div>
+        </div>
+        <ul class="factores">{factores_html}</ul>
+    </div>
+    <style>
+    .tarjeta {{
+        background:#F8FAFF; border-radius:16px; padding:1.5rem;
+        box-shadow:0 3px 12px rgba(0,0,0,0.15); margin-top:10px;
+        animation: fadeIn 0.9s ease-in-out;
+    }}
+    .titulo {{ color:#003366; text-align:center; font-weight:800;
+        font-size:1.4rem; margin-bottom:1rem; }}
+    .barra-container {{ position:relative; margin-bottom:1.4rem; }}
+    .barra {{ display:flex; height:24px; border-radius:6px; overflow:hidden; }}
+    .segmento {{ flex:1; transition:opacity 0.4s ease; }}
+    .etiquetas {{ display:flex; justify-content:space-between; margin-top:6px;
+        font-size:0.9rem; font-weight:600; color:#003366; }}
+    .flecha {{ position:absolute; top:24px; transform:translateX(-50%);
+        width:0; height:0; border-left:9px solid transparent;
+        border-right:9px solid transparent; border-top:12px solid #003366; }}
+    .factores {{ margin-top:12px; margin-left:20px; color:#002D62;
+        font-size:1.05rem; line-height:1.6; }}
+    </style>
+    """
+    st.markdown(html_final, unsafe_allow_html=True)
+
+
+
 
 # ==== INFO TÉCNICA ====
 with st.expander("🔧 Información técnica"):
