@@ -347,7 +347,11 @@ if st.session_state.get("calculada", False):
     st.metric("", f"{prima_pura:,.4f}")
 
     # ==== SLIDERS REACTIVOS ====
-    st.markdown("### 💸 Cálculo de Prima Comercial")
+    st.markdown("""
+    <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; 
+    margin-top:0rem; margin-bottom:0.3rem;'>
+     💸 Prima Comercial (USD)
+    </h2>""", unsafe_allow_html=True)
     gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
     utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
     impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
