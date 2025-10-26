@@ -186,48 +186,35 @@ st.set_page_config(
     layout="wide"
 )
 
-# ==== ESTILO GLOBAL: fondo blanco y ancho controlado ====
-st.markdown("""
+
+# ==== ESTILO GLOBAL: fondo blanco + contenedor centrado ====
+css_container = '''
 <style>
-/* Forzar fondo blanco */
+/* Fondo blanco forzado */
 html, body, [class*="stAppViewContainer"], [class*="stApp"] {
-    background-color: white !important;
-    color: #002D62 !important;
+  background-color: white !important;
+  color: #002D62 !important;
 }
 
-/* Limitar ancho máximo del contenido principal */
-.main-container {
-    max-width: 1150px;  /* ajusta entre 900 y 1200 px según tu preferencia */
-    margin: 0 auto;     /* centra el contenido */
-    padding: 0 1rem;    /* pequeño margen lateral */
-}
-
-/* Color del sidebar si lo usas */
+/* Sidebar claro (si lo usas) */
 [data-testid="stSidebar"] {
-    background-color: #F8FAFF !important;
+  background-color: #F8FAFF !important;
+}
+
+/* Contenedor central con ancho máximo */
+.main-container {
+  max-width: 1150px;  /* ajusta 900–1200 px a gusto */
+  margin: 0 auto;     /* centra */
+  padding: 0 1rem;    /* respiración lateral */
 }
 </style>
 
 <div class="main-container">
-""", unsafe_allow_html=True)
+'''
+st.markdown(css_container, unsafe_allow_html=True)
 
 
-/* Evitar herencia de modo oscuro del dispositivo */
-[data-testid="stAppViewContainer"] {
-    background-color: white !important;
-}
 
-/* Ajustar color del sidebar si usas uno */
-[data-testid="stSidebar"] {
-    background-color: #F8FAFF !important;
-}
-
-/* Textos y enlaces */
-h1, h2, h3, h4, h5, h6, p, span, div {
-    color: #002D62 !important;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # ==== ENCABEZADO ====
 st.markdown("""
