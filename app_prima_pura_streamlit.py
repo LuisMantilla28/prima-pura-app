@@ -336,7 +336,7 @@ if st.session_state.get("calculada", False):
     )])
     fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=160)
 
-    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima por cobertura (USD)</h2>",
+    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima pura por cobertura (USD)</h2>",
                 unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
@@ -350,7 +350,7 @@ if st.session_state.get("calculada", False):
     st.markdown("""
     <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; 
     margin-top:0rem; margin-bottom:0.3rem;'>
-     💸 Prima Comercial (USD)
+    💸 Prima Comercial (USD)
     </h2>""", unsafe_allow_html=True)
     gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
     utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
