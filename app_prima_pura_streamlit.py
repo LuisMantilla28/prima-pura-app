@@ -8,6 +8,27 @@ import warnings
 from scipy.special import expit, logit
 from datetime import datetime
 
+EXECUTIVE_CSS = """
+<style>
+/* Forzar modo claro en toda la app */
+html, body, [class*="stAppViewContainer"] {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
+}
+
+/* Asegurar que los contenedores mantengan colores claros */
+.stApp {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
+}
+
+/* Ajustes menores para textos y bordes */
+div[data-testid="stMarkdown"] p {
+  color: #111111 !important;
+}
+</style>
+"""
+
 # ==========================================
 # CONFIG
 # ==========================================
