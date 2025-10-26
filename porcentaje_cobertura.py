@@ -309,7 +309,7 @@ def _hex_to_rgb(hex_color: str):
     hex_color = hex_color.lstrip("#")
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
-def _rgba_str(hex_color: str, alpha: float = 0.5) -> str:
+def _rgba_str(hex_color: str, alpha: float = 0.8) -> str:
     r, g, b = _hex_to_rgb(hex_color)
     return f"background-color: rgba({r}, {g}, {b}, {alpha});"
 
