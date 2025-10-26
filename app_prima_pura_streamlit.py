@@ -356,15 +356,15 @@ if st.button("🔢 Calcular prima pura"):
         st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
 
-        
         st.markdown("### 💸 Cálculo de Prima Comercial")
-        
+
         # Sliders
         gastos = st.slider("Gastos administrativos (%)", 0, 50, 20)
         utilidad = st.slider("Utilidad (%)", 0, 30, 10)
         impuestos = st.slider("Impuestos (%)", 0, 20, 5)
         
-        prima_pura = prima_total_pred  # el valor que ya calculas
+        # ✅ tomar prima pura desde df_pred
+        prima_pura = df_pred["prima_pura_total"].iloc[0]
         
         # Cálculo prima comercial
         factor_total = 1 + (gastos + utilidad + impuestos)/100
@@ -380,6 +380,7 @@ if st.button("🔢 Calcular prima pura"):
         | Impuestos | {impuestos}% | {prima_pura*impuestos/100:.2f} |
         | **Prima comercial total** | — | **{prima_comercial:.2f}** |
         """)
+
         
 
         
