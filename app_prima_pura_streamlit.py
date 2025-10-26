@@ -417,7 +417,7 @@ if st.session_state.get("calculada", False):
     #st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>", unsafe_allow_html=True)
 
     # ==== MÉTRICA VISUAL DE PRIMA COMERCIAL ====
-    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💸 Prima comercial total (USD)</h2>",
+    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima comercial total (USD)</h2>",
                 unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
