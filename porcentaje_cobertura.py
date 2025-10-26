@@ -368,6 +368,57 @@ def render_table(df: pd.DataFrame, caption: str, column_config: Dict[str, st.col
         column_config=column_config or {}
     )
 
+
+
+# tabla
+# ---------- Tabla fija de perfiles (según tu resultado) ----------
+def get_niveles_table() -> pd.DataFrame:
+    # Valores exactos que compartiste
+    data = [
+        {"nivel_riesgo":"Bajo",       "2 o más inquilinos":"No", "Ubicación":"Dentro de campus", "Extintor de incendios":"Sí",  "Prima esperada promedio":337,  "N° observaciones":2955},
+        {"nivel_riesgo":"Bajo",       "2 o más inquilinos":"No", "Ubicación":"Dentro de campus", "Extintor de incendios":"No",  "Prima esperada promedio":529,  "N° observaciones":1227},
+        {"nivel_riesgo":"Medio-bajo", "2 o más inquilinos":"No", "Ubicación":"Fuera de campus",  "Extintor de incendios":"Sí",  "Prima esperada promedio":816,  "N° observaciones":1586},
+        {"nivel_riesgo":"Medio-bajo", "2 o más inquilinos":"Sí", "Ubicación":"Dentro de campus", "Extintor de incendios":"Sí",  "Prima esperada promedio":1006, "N° observaciones":725},
+        {"nivel_riesgo":"Medio",      "2 o más inquilinos":"No", "Ubicación":"Fuera de campus",  "Extintor de incendios":"No",  "Prima esperada promedio":1248, "N° observaciones":671},
+        {"nivel_riesgo":"Medio",      "2 o más inquilinos":"Sí", "Ubicación":"Dentro de campus", "Extintor de incendios":"No",  "Prima esperada promedio":1601, "N° observaciones":319},
+        {"nivel_riesgo":"Medio-alto", "2 o más inquilinos":"Sí", "Ubicación":"Fuera de campus",  "Extintor de incendios":"Sí",  "Prima esperada promedio":2322, "N° observaciones":367},
+        {"nivel_riesgo":"Alto",       "2 o más inquilinos":"Sí", "Ubicación":"Fuera de campus",  "Extintor de incendios":"No",  "Prima esperada promedio":3584, "N° observaciones":149},
+    ]
+    cols = ["nivel_riesgo","2 o más inquilinos","Ubicación","Extintor de incendios","Prima esperada promedio","N° observaciones"]
+    df = pd.DataFrame(data, columns=cols)
+    return df
+
+# ---------- Estilo por color de riesgo (misma paleta del scatter) ----------
+def _hex_to_rgb(hex_color: str):
+    hex_color = hex_color.lstrip("#")
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+def _rgba_str(hex_color: str, alpha: float = 0.18) -> str:
+    r, g, b = _hex_to_rgb(hex_color)
+    return f"background-color: rgba({r}, {g}, {b}, {alpha});"
+
+def style_by_risk(df: pd.DataFrame) -> pd.io.formats.style.Styler:
+    # Colorea filas completas según `nivel_riesgo` con la misma paleta
+    def row_style(row):
+        nivel = str(row["nivel_riesgo"])
+        color_hex = COLOR_MAP.get(nivel, "#e5e7eb")  # gris claro si no está
+        bg = _rgba_str(color_hex, alpha=0.18)       # leve transparencia para legibilidad
+        return [bg] * len(row)
+
+    # Formatos numéricos
+    sty = (
+        df.style
+          .apply(row_style, axis=1)
+          .format({
+              "Prima esperada promedio": "{:,.0f}",
+              "N° observaciones": "{:,}"
+          })
+    )
+    return sty
+
+
+
+
 # ================================
 # APP
 # ================================
@@ -481,6 +532,14 @@ def main():
                             - Los factores se estiman condicionales al modelo y a la cobertura seleccionada.
                             """
                         )
+                    # --------- NUEVO BLOQUE: Tabla de perfiles coloreada por nivel ----------
+            with st.container(border=True):
+                st.markdown("### Perfiles de riesgo")
+                df_perf = get_niveles_table()
+                styler = style_by_risk(df_perf)
+                # st.dataframe acepta Styler y respeta los estilos
+                st.dataframe(styler, use_container_width=True, hide_index=True)
+
 
             # FILA INFERIOR: TABLA total (sin %Cambio_total)
             with st.container(border=True):
