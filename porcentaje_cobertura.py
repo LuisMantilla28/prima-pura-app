@@ -29,7 +29,7 @@ import plotly.express as px
 # ================================
 REMOTE_PY_URL = os.getenv("REMOTE_PY_URL", "")
 REMOTE_MODULE_NAME = "modelo_remoto"
-LOGO_URL= https://github.com/LuisMantilla28/prima-pura-app/blob/main/Logo_competencia.jpg
+LOGO_URL= "https://github.com/LuisMantilla28/prima-pura-app/blob/main/Logo_competencia.jpg"
 LOGO_URL = os.getenv("LOGO_URL", "")
 EXCEL_URL = "https://raw.githubusercontent.com/LuisMantilla28/prima-pura-app/main/predicciones_train_test_una_hoja.xlsx"
 
