@@ -8,6 +8,34 @@ import warnings
 from scipy.special import expit, logit
 from datetime import datetime
 
+# ---- Parche visual para header/toolbar oscuro ----
+st.markdown("""
+<style>
+/* Header superior y toolbar en claro */
+header[data-testid="stHeader"], [data-testid="stHeader"] {
+  background: #FFFFFF !important;
+}
+header[data-testid="stHeader"]::before {
+  background: #FFFFFF !important;
+}
+/* Línea inferior sutil (opcional) */
+header[data-testid="stHeader"] {
+  border-bottom: 1px solid #eaeaea !important;
+}
+
+/* Sidebar en claro (por si aparece banda oscura) */
+section[data-testid="stSidebar"] {
+  background: #F8FAFF !important;
+}
+
+/* Contenedor principal en claro */
+div[data-testid="stAppViewContainer"] {
+  background: #FFFFFF !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 EXECUTIVE_CSS = """
 <style>
 /* Forzar modo claro en toda la app */
