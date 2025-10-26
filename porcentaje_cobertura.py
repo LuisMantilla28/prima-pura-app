@@ -224,7 +224,7 @@ def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
             marker=dict(
                 size=sub["_size_"],
                 color=COLOR_MAP.get(nivel, "#999"),
-                line=dict(width=0.5, color="white"),
+                line=dict(width=0.8, color="white"),
                 opacity=0.9,
             ),
             text=sub["nivel_riesgo"],
