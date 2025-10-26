@@ -418,15 +418,50 @@ if st.session_state.get("calculada", False):
     with col_izq:
         st.markdown(df_detalle.style
             .set_table_styles([
-                {"selector": "thead th", "props": [("background-color", "#0055A4"), ("color", "white"),
-                                                   ("font-weight", "600"), ("text-align", "center")]},
-                {"selector": "tbody td", "props": [("text-align", "center"), ("color", "#002D62"), ("font-size", "0.95rem")]},
-                {"selector": "tbody tr:nth-child(even)", "props": [("background-color", "#F2F6FF")]}
+                # --- ENCABEZADOS ---
+                {"selector": "thead th", "props": [
+                    ("background-color", "#0055A4"),
+                    ("color", "white"),
+                    ("font-weight", "700"),
+                    ("text-align", "center"),
+                    ("font-size", "1rem")
+                ]},
+                # --- FILAS IMPARES ---
+                {"selector": "tbody tr:nth-child(odd)", "props": [
+                    ("background-color", "#FFFFFF")
+                ]},
+                # --- FILAS PARES ---
+                {"selector": "tbody tr:nth-child(even)", "props": [
+                    ("background-color", "#F4F8FF")
+                ]},
+                # --- CELDAS GENERALES ---
+                {"selector": "tbody td", "props": [
+                    ("text-align", "center"),
+                    ("color", "#002D62"),
+                    ("font-size", "0.95rem"),
+                    ("padding", "8px")
+                ]}
             ])
+            # --- APLICAR ESTILO A COLUMNA ESPECÍFICA ---
+            .applymap(lambda v: "background-color:#E6F0FF; color:#003366; font-weight:700;", subset=["Prima pura (USD)"])
             .hide(axis="index")
-            .format({"Monto máximo (USD)": "{:,.0f}", "Prima pura (USD)": "{:,.2f}"})._repr_html_(),
+            .format({
+                "Monto máximo (USD)": "{:,.0f}",
+                "Prima pura (USD)": "{:,.2f}"
+            })._repr_html_(),
             unsafe_allow_html=True
         )
+        #st.markdown(df_detalle.style
+         #   .set_table_styles([
+          #      {"selector": "thead th", "props": [("background-color", "#0055A4"), ("color", "white"),
+           #                                        ("font-weight", "600"), ("text-align", "center")]},
+            #    {"selector": "tbody td", "props": [("text-align", "center"), ("color", "#002D62"), ("font-size", "0.95rem")]},
+             #   {"selector": "tbody tr:nth-child(even)", "props": [("background-color", "#F2F6FF")]}
+            #])
+            #.hide(axis="index")
+            #.format({"Monto máximo (USD)": "{:,.0f}", "Prima pura (USD)": "{:,.2f}"})._repr_html_(),
+            #unsafe_allow_html=True
+        #)
     
     with col_der:
         fig_pie = go.Figure(
