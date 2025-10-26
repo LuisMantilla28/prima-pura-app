@@ -416,6 +416,27 @@ if st.session_state.get("calculada", False):
     st.markdown("<hr style='border: 1px solid #E6EAF0; margin: 24px 0;'>", unsafe_allow_html=True)
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>", unsafe_allow_html=True)
 
+    # ==== MÉTRICA VISUAL DE PRIMA COMERCIAL ====
+    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💸 Prima comercial total (USD)</h2>",
+                unsafe_allow_html=True)
+    
+    st.markdown(f"""
+    <div style='
+        background:linear-gradient(90deg,#004AAD,#0078D7);
+        border-radius:12px;
+        padding:18px;
+        text-align:center;
+        font-size:1.8rem;
+        font-weight:800;
+        color:white;
+        box-shadow:0 3px 10px rgba(0,0,0,0.25);
+        margin-top:10px;
+    '>
+     💰 {prima_comercial:,.2f} USD
+    </div>
+    """, unsafe_allow_html=True)
+
+
     col1, col2, col3 = st.columns(3)
     with col1:
         gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
