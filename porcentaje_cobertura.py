@@ -21,6 +21,7 @@ import pandas as pd
 import requests
 import streamlit as st
 from datetime import datetime
+from plotly import graph_objects as go
 
 import plotly.express as px
 
@@ -183,38 +184,81 @@ def ensure_pred_cols(df: pd.DataFrame, cobertura: str):
 # PLOT: Scatter Plotly (responsive, más pequeño)
 # -------------------------------------------------------------
 def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
-    col_freq, col_sev, col_pri = ensure_pred_cols(df, cobertura)
+    # columnas requeridas
+    col_freq = f"{cobertura}_freq_pred"
+    col_sev  = f"{cobertura}_sev_pred"
+    col_pri  = f"{cobertura}_prima_pred"
+    for c in [col_freq, col_sev, col_pri]:
+        if c not in df.columns:
+            raise ValueError(f"Falta la columna '{c}' para la cobertura '{cobertura}'.")
+
+    # muestreo
     df_plot = df.sample(sample_max, random_state=42) if len(df) > sample_max else df.copy()
 
-    # normalizar tamaños (robusto) y hacerlos más pequeños
-    s = pd.to_numeric(df_plot[col_pri], errors="coerce").fillna(0).values
-    s = np.clip(s, np.nanpercentile(s, 5), np.nanpercentile(s, 95))
-    size_min, size_max = 4, 16
-    s_norm = size_min + (s - s.min()) * (size_max - size_min) / (s.max() - s.min() + 1e-9)
+    # normalización robusta de tamaños con recorte a percentiles
+    raw = pd.to_numeric(df_plot[col_pri], errors="coerce").fillna(0).values
+    raw = np.clip(raw, np.nanpercentile(raw, 5), np.nanpercentile(raw, 95))
 
+    # 👉 ajusta estos dos si quieres más/menos tamaño
+    SIZE_MIN = 3   # píxeles
+    SIZE_MAX = 10  # píxeles
+
+    # escalar linealmente a diámetro en píxeles
+    s_norm = SIZE_MIN + (raw - raw.min()) * (SIZE_MAX - SIZE_MIN) / (raw.max() - raw.min() + 1e-12)
     df_plot = df_plot.assign(_size_=s_norm)
+
     c_label = cobertura.replace("_siniestros_monto", "").replace("_", " ").capitalize()
 
-    fig = px.scatter(
-        df_plot,
-        x=pd.to_numeric(df_plot[col_freq], errors="coerce"),
-        y=pd.to_numeric(df_plot[col_sev], errors="coerce"),
-        size="_size_",
-        color="nivel_riesgo",
-        color_discrete_map=COLOR_MAP,
-        hover_data={col_pri: ':.2f', col_freq: ':.3f', col_sev: ':.2f', "nivel_riesgo": True, "_size_": False},
-        title=f"Mapa de riesgo – {c_label}",
-    )
-    fig.update_traces(marker=dict(line=dict(width=1, color="white"), opacity=0.9))
+    fig = go.Figure()
+
+    # una traza por nivel de riesgo para mantener la leyenda limpia
+    for nivel in NIVELES_RIESGO:
+        sub = df_plot[df_plot["nivel_riesgo"] == nivel]
+        if sub.empty:
+            continue
+        fig.add_trace(
+            go.Scattergl(
+                x=pd.to_numeric(sub[col_freq], errors="coerce"),
+                y=pd.to_numeric(sub[col_sev], errors="coerce"),
+                mode="markers",
+                name=nivel,
+                marker=dict(
+                    size=sub["_size_"],           # tamaño en píxeles (diámetro)
+                    color=COLOR_MAP.get(nivel, "#999"),
+                    line=dict(width=1, color="white"),
+                    opacity=0.9
+                ),
+                hovertemplate=(
+                    "<b>Nivel:</b> %{text}<br>"
+                    "E[N]: %{x:.3f}<br>"
+                    "E[Y|N>0]: %{y:.2f}<br>"
+                    f"{col_pri}: %{customdata:.2f}<extra></extra>"
+                ),
+                text=sub["nivel_riesgo"],
+                customdata=pd.to_numeric(sub[col_pri], errors="coerce").fillna(0).values,
+            )
+        )
+
     fig.update_layout(
-        height=340,
+        title=f"Mapa de riesgo – {c_label}",
+        height=340,  # un poco más pequeño, proporcional
         margin=dict(l=10, r=10, t=50, b=10),
         legend_title_text="Nivel de riesgo",
         plot_bgcolor="#FBFBFB",
     )
-    fig.update_xaxes(title_text="Frecuencia esperada E[N]", gridcolor="rgba(0,0,0,0.15)", zeroline=False)
-    fig.update_yaxes(title_text="Severidad esperada E[Y | N>0]", gridcolor="rgba(0,0,0,0.15)", zeroline=False)
+    fig.update_xaxes(
+        title_text="Frecuencia esperada E[N]",
+        gridcolor="rgba(0,0,0,0.15)",
+        zeroline=False
+    )
+    fig.update_yaxes(
+        title_text="Severidad esperada E[Y | N>0]",
+        gridcolor="rgba(0,0,0,0.15)",
+        zeroline=False
+    )
+
     return fig
+
 
 # -------------------------------------------------------------
 # Datos fallback (métricas y tablas)
