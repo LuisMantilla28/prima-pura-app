@@ -80,6 +80,28 @@ h3, h4 { margin: 0.2rem 0 0.6rem 0; }
 </style>
 """
 
+EXECUTIVE_CSS += """
+<style>
+/* Forzar modo claro en toda la app */
+html, body, [class*="stAppViewContainer"] {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
+}
+
+/* Asegurar que los contenedores mantengan colores claros */
+.stApp {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
+}
+
+/* Ajustes menores para textos y bordes */
+div[data-testid="stMarkdown"] p {
+  color: #111111 !important;
+}
+</style>
+"""
+
+
 # Paleta niveles
 NIVELES_RIESGO = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
 COLOR_MAP = {
@@ -307,7 +329,11 @@ def render_table(df: pd.DataFrame, caption: str, column_config: Dict[str, st.col
 # APP
 # ================================
 def main():
-    st.set_page_config(page_title="Métricas de Prima por Cobertura", page_icon="📊", layout="wide")
+    st.set_page_config(
+        page_title="Métricas de Prima por Cobertura",
+        page_icon="https://raw.githubusercontent.com/LuisMantilla28/prima-pura-app/main/losog_simple-removebg-preview.png",
+        layout="wide"
+    )
     st.markdown(EXECUTIVE_CSS, unsafe_allow_html=True)
 
     # Header
