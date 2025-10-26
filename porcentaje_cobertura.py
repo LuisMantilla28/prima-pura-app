@@ -317,7 +317,7 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)  # 👈 baja un poco el logo
             st.image(LOGO_URL, width=150, use_container_width=False)  # 👈 más grande (antes era 64)
     with top_title:
-        st.markdown("<h1 class='title-text' style='margin-bottom:0rem; margin-top:2rem;'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 class='title-text' style='margin-bottom:0rem; margin-top:2.5rem;'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
 
 
     # Datos
