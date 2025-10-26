@@ -317,8 +317,8 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)  # 👈 baja un poco el logo
             st.image(LOGO_URL, width=150, use_container_width=False)  # 👈 más grande (antes era 64)
     with top_title:
-        st.markdown("<h1 class='title-text' style='margin-top:1.4rem;'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
-        st.markdown("<span style='color:#6b7280'>Frecuencia · Severidad · Prima esperada</span>", unsafe_allow_html=True)
+        st.markdown("<h1 class='title-text' style='margin-bottom:0.3rem; margin-top:1.4rem;'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
+
 
     # Datos
     mod = load_remote_module(REMOTE_PY_URL, REMOTE_MODULE_NAME)
