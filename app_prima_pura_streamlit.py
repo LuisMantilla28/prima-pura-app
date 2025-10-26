@@ -356,6 +356,33 @@ if st.button("🔢 Calcular prima pura"):
         st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
 
 
+        
+        st.markdown("### 💸 Cálculo de Prima Comercial")
+        
+        # Sliders
+        gastos = st.slider("Gastos administrativos (%)", 0, 50, 20)
+        utilidad = st.slider("Utilidad (%)", 0, 30, 10)
+        impuestos = st.slider("Impuestos (%)", 0, 20, 5)
+        
+        prima_pura = prima_total_pred  # el valor que ya calculas
+        
+        # Cálculo prima comercial
+        factor_total = 1 + (gastos + utilidad + impuestos)/100
+        prima_comercial = prima_pura * factor_total
+        
+        # Mostrar resultados
+        st.markdown(f"""
+        | Concepto | % | Valor (USD) |
+        |-----------|---|-------------|
+        | Prima pura | — | {prima_pura:.2f} |
+        | Gastos administrativos | {gastos}% | {prima_pura*gastos/100:.2f} |
+        | Utilidad | {utilidad}% | {prima_pura*utilidad/100:.2f} |
+        | Impuestos | {impuestos}% | {prima_pura*impuestos/100:.2f} |
+        | **Prima comercial total** | — | **{prima_comercial:.2f}** |
+        """)
+        
+
+        
         # ==========================================================
         # 🧭 VISUALIZACIÓN COMPLETA DEL PERFIL DE RIESGO
         # ==========================================================
