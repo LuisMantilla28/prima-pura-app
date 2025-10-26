@@ -434,29 +434,25 @@ if st.session_state.get("calculada", False):
             labels=df_detalle["Cobertura"],
             values=df_detalle["Prima pura (USD)"],
             hole=0.45,
-            textinfo="percent",
+            textinfo="label+percent",        # muestra etiqueta y porcentaje
+            textposition="outside",          # coloca texto fuera del gráfico
+            insidetextorientation="radial",  # asegura orientación legible
             marker=dict(colors=["#0078D7", "#3399FF", "#66B2FF", "#99CCFF"]),
             hoverinfo="label+value+percent",
-            showlegend=True  # <- vuelve a mostrar leyenda
+            pull=[0.03, 0.03, 0, 0],         # sutil separación para claridad
+            showlegend=False                 # quitamos leyenda para no duplicar
         )]
     )
     
         fig_pie.update_layout(
             title=dict(text="Distribución de la prima pura por cobertura", font=dict(size=15, color="#002D62")),
-            showlegend=True,
-            legend=dict(
-                orientation="h",          # horizontal
-                yanchor="bottom",
-                y=-0.15,                  # baja un poco la leyenda
-                xanchor="center",
-                x=0.5,                    # centrada
-                font=dict(size=12, color="#002D62")
-            ),
-            height=300,
-            margin=dict(t=50, b=50, l=40, r=40)
+            showlegend=False,
+            height=320,
+            margin=dict(t=60, b=40, l=20, r=60)  # deja espacio para etiquetas externas
         )
         
         st.plotly_chart(fig_pie, use_container_width=False, config={"displayModeBar": False})
+        
 
     # ==== MÉTRICA PRINCIPAL ====
     prima_pura = st.session_state["prima_pura_total"]
