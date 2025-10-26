@@ -142,7 +142,7 @@ html, body, [class*="stAppViewContainer"], [class*="stApp"] {
 .main-container { max-width: 1150px; margin: 0 auto; padding: 0 1rem; }
 
 /* ===== Encabezado con logo a la izquierda ===== */
-:root { --logo-size: 100px; } /* ← ajusta tamaño del logo aquí */
+:root { --logo-size: 150px; } /* ← ajusta tamaño del logo aquí */
 
 .header {
     background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
