@@ -407,41 +407,49 @@ if st.session_state.get("calculada", False):
         ]
     })
     
-    # --- Tabla estilizada sin columna de porcentajes ---
-    st.markdown(df_detalle.style
-        .set_table_styles([
-            {"selector": "thead th", "props": [("background-color", "#0055A4"), ("color", "white"),
-                                               ("font-weight", "600"), ("text-align", "center")]},
-            {"selector": "tbody td", "props": [("text-align", "center"), ("color", "#002D62"), ("font-size", "0.95rem")]},
-            {"selector": "tbody tr:nth-child(even)", "props": [("background-color", "#F2F6FF")]}
-        ])
-        .hide(axis="index")
-        .format({"Monto máximo (USD)": "{:,.0f}", "Prima pura (USD)": "{:,.2f}"})._repr_html_(),
-        unsafe_allow_html=True
-    )
-    
-    # ==========================================================
-    # 🥧 Gráfico de torta (participación de cada cobertura)
-    # ==========================================================
-    fig_pie = go.Figure(
-        data=[go.Pie(
-            labels=df_detalle["Cobertura"],
-            values=df_detalle["Prima pura (USD)"],
-            hole=0.45,
-            textinfo="label+percent",
-            marker=dict(colors=["#0078D7", "#3399FF", "#66B2FF", "#99CCFF"]),
-            hoverinfo="label+value+percent"
-        )]
-    )
-    fig_pie.update_layout(
-        title=dict(text="Distribución de la prima pura por cobertura", font=dict(size=16, color="#002D62")),
-        showlegend=False,
-        height=350
-    )
-    st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
-    
 
+    # ==========================================================
+    # 📋 Tabla y gráfico de torta lado a lado
+    # ==========================================================
+    st.markdown("<h3 style='color:#002D62; font-weight:800;'>🛡️ Detalle de coberturas y montos asegurados</h3>", unsafe_allow_html=True)
     
+    col_izq, col_der = st.columns([1.3, 1])
+    
+    with col_izq:
+        st.markdown(df_detalle.style
+            .set_table_styles([
+                {"selector": "thead th", "props": [("background-color", "#0055A4"), ("color", "white"),
+                                                   ("font-weight", "600"), ("text-align", "center")]},
+                {"selector": "tbody td", "props": [("text-align", "center"), ("color", "#002D62"), ("font-size", "0.95rem")]},
+                {"selector": "tbody tr:nth-child(even)", "props": [("background-color", "#F2F6FF")]}
+            ])
+            .hide(axis="index")
+            .format({"Monto máximo (USD)": "{:,.0f}", "Prima pura (USD)": "{:,.2f}"})._repr_html_(),
+            unsafe_allow_html=True
+        )
+    
+    with col_der:
+        fig_pie = go.Figure(
+            data=[go.Pie(
+                labels=df_detalle["Cobertura"],
+                values=df_detalle["Prima pura (USD)"],
+                hole=0.45,
+                textinfo="label+percent",
+                marker=dict(colors=["#0078D7", "#3399FF", "#66B2FF", "#99CCFF"]),
+                hoverinfo="label+value+percent"
+            )]
+        )
+        fig_pie.update_layout(
+            title=dict(text="Distribución de la prima pura por cobertura", font=dict(size=16, color="#002D62")),
+            showlegend=False,
+            height=350
+        )
+        st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
+    
+    
+    
+        
+        
     
     # ==== MÉTRICA PRINCIPAL ====
     prima_pura = st.session_state["prima_pura_total"]
