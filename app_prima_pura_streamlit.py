@@ -458,7 +458,7 @@ if st.session_state.get("calculada", False):
     prima_pura = st.session_state["prima_pura_total"]
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💰 Prima pura total (USD)</h2>",
                 unsafe_allow_html=True)
-    #st.metric("", f"{prima_pura:,.2f}")
+    
 
     st.markdown(f"""
     <div style='
@@ -472,7 +472,7 @@ if st.session_state.get("calculada", False):
         color:#003366;
         box-shadow:0 2px 6px rgba(0,0,0,0.1);
     '>
-    💰 {prima_pura:,.2f} USD
+     {prima_pura:,.2f} USD
     </div>
     """, unsafe_allow_html=True)
 
@@ -551,7 +551,7 @@ if st.session_state.get("calculada", False):
     col_izq, col_der = st.columns([1, 1.1])  # relación ajustable (más espacio a la barra)
     
     with col_izq:
-        st.markdown(f"""
+       st.markdown(f"""
         <table style="width:100%; border-collapse:collapse; margin-top:10px;">
         <thead style="background-color:#0055A4; color:white; font-weight:600;">
         <tr>
@@ -565,14 +565,18 @@ if st.session_state.get("calculada", False):
         <tr><td style="padding:6px;">Gastos administrativos</td><td style="text-align:center;">{gastos}%</td><td style="text-align:right;">{prima_pura*gastos/100:,.2f}</td></tr>
         <tr><td style="padding:6px;">Utilidad</td><td style="text-align:center;">{utilidad}%</td><td style="text-align:right;">{prima_pura*utilidad/100:,.2f}</td></tr>
         <tr><td style="padding:6px;">Impuestos</td><td style="text-align:center;">{impuestos}%</td><td style="text-align:right;">{prima_pura*impuestos/100:,.2f}</td></tr>
-        <tr style="background-color:#E6F0FF; font-weight:800;">
-          <td style="padding:6px;">Prima comercial total</td><td style="text-align:center;">—</td>
-          <td style="text-align:right; color:#003366;">{prima_comercial:,.2f}</td>
+        
+        <!-- 🔵 NUEVA FILA MEJORADA -->
+        <tr style="background-color:#004AAD; color:white; font-weight:900; font-size:1.1rem;">
+          <td style="padding:6px;">Prima comercial total</td>
+          <td style="text-align:center;">—</td>
+          <td style="text-align:right;">{prima_comercial:,.2f}</td>
         </tr>
+        
         </tbody>
         </table>
         """, unsafe_allow_html=True)
-    
+            
     with col_der:
         niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
         colores = ["#80CFA9", "#FFF176", "#FFD54F", "#FB8C00", "#E53935"]
