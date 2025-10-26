@@ -289,7 +289,8 @@ with col2:
     genero = st.selectbox("⚧️ Género", ["Masculino", "Femenino", "Otro", "No respuesta"], index=0)
     extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
 
-# ==== BOTÓN DE CÁLCULO ====
+
+    # ==== BOTÓN DE CÁLCULO ====
 if st.button("🔢 Calcular prima pura"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
@@ -367,7 +368,8 @@ if st.session_state.get("calculada", False):
     | **Prima comercial total** | — | **{prima_comercial:.2f}** |
     """)
 
-    
+
+
         # ==========================================================
         # 🧭 VISUALIZACIÓN COMPLETA DEL PERFIL DE RIESGO
         # ==========================================================
