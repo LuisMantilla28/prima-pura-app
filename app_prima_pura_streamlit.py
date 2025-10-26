@@ -5,9 +5,9 @@ import joblib
 import numpy as np
 import pandas as pd
 import streamlit as st
+import warnings
 from scipy.special import expit, logit
 from datetime import datetime
-import plotly.graph_objects as go
 
 # ==========================================
 # CONFIG
@@ -23,6 +23,8 @@ CAT_COLS = ['año_cursado', 'estudios_area', '2_o_mas_inquilinos',
             'en_campus', 'genero', 'extintor_incendios']
 NUM_COLS = ['calif_promedio', 'distancia_al_campus']
 REQ_COLS = NUM_COLS + CAT_COLS
+
+# Si el .pkl está en el mismo repo:
 MODEL_PATH = "modelos_hurdle_tweedie.pkl"
 
 # ==========================================
@@ -31,17 +33,22 @@ MODEL_PATH = "modelos_hurdle_tweedie.pkl"
 try:
     ct_mod = importlib.import_module("sklearn.compose._column_transformer")
     if not hasattr(ct_mod, "_RemainderColsList"):
-        class _RemainderColsList(list): pass
+        class _RemainderColsList(list):
+            """Shim para compatibilidad de pickles antiguos de ColumnTransformer."""
+            pass
         setattr(ct_mod, "_RemainderColsList", _RemainderColsList)
 except Exception:
+    # Si falla el import, continuamos; el load puede funcionar igual
     pass
 
 # ==========================================
 # CLASE NECESARIA PARA DESERIALIZAR EL PICKLE
+# (debe estar definida ANTES de joblib.load)
 # ==========================================
 from sklearn.linear_model import LogisticRegression, PoissonRegressor
 
 class HurdleFrequency:
+    """Frecuencia HURDLE: Logit (ocurrencia) + Poisson (cond. en N>0) con calibración de media."""
     def __init__(self, max_iter=300, logit_C=0.05, poisson_alpha=0.1, calibrate_mean=True):
         self.max_iter = max_iter
         self.logit_C = logit_C
@@ -57,6 +64,7 @@ class HurdleFrequency:
         y = np.asarray(y, dtype=float).ravel()
         y_occ = (y > 0).astype(int)
         self.logit.fit(X, y_occ)
+
         if self.calibrate_mean:
             p_hat = self.logit.predict_proba(X)[:, 1]
             pi_real = y_occ.mean() + 1e-12
@@ -64,6 +72,7 @@ class HurdleFrequency:
             self.delta_bias_ = logit(pi_real) - logit(pi_pred)
         else:
             self.delta_bias_ = 0.0
+
         mask = y > 0
         if mask.sum() == 0:
             self.has_pos_ = False
@@ -90,12 +99,12 @@ def _to_int(x):
     s = str(x).strip().lower()
     return 1 if s in {"si", "sí", "true", "1", "y", "s"} else 0
 
-def validar_columnas(df):
+def validar_columnas(df: pd.DataFrame):
     faltantes = [c for c in REQ_COLS if c not in df.columns]
     if faltantes:
         raise ValueError(f"Faltan columnas requeridas: {faltantes}")
 
-def normalizar_binarias(df):
+def normalizar_binarias(df: pd.DataFrame):
     for col in ['2_o_mas_inquilinos', 'en_campus', 'extintor_incendios']:
         if col in df.columns:
             df[col] = df[col].apply(_to_int)
@@ -107,68 +116,109 @@ def predecir_prima_pura_total(df_nuevos, num_cols, cat_cols, coberturas, preproc
     X_nuevos = preprocess.transform(df_nuevos[num_cols + cat_cols])
     pred = {}
     for c in coberturas:
-        freq = modelos_freq[c].predict(X_nuevos)
-        sev = np.clip(modelos_sev[c].predict(X_nuevos), 0, None)
+        try:
+            freq = modelos_freq[c].predict(X_nuevos)
+            sev  = np.clip(modelos_sev[c].predict(X_nuevos), 0, None)
+        except Exception as e:
+            raise RuntimeError(f"Error prediciendo cobertura '{c}': {e}")
         pred[c] = freq * sev
     out = pd.DataFrame(pred, index=df_nuevos.index)
     out["prima_pura_total"] = out.sum(axis=1)
     return out
 
 # ==========================================
-# CARGA DEL MODELO
+# CARGA ROBUSTA DEL MODELO
 # ==========================================
 @st.cache_resource(show_spinner=True)
 def load_model_objects():
     if os.path.exists(MODEL_PATH):
         return joblib.load(MODEL_PATH)
-    raise FileNotFoundError("No se encontró el modelo local.")
+    model_url = st.secrets.get("MODEL_URL", None)
+    gdrive_id = st.secrets.get("MODEL_GDRIVE_ID", None)
+    if (model_url is None) and (gdrive_id is None):
+        raise FileNotFoundError("No se encontró el modelo local y no hay MODEL_URL/MODEL_GDRIVE_ID en st.secrets.")
+    tmp_path = "/tmp/modelos_hurdle_tweedie.pkl"
+    if model_url is not None:
+        import requests
+        r = requests.get(model_url, timeout=120)
+        r.raise_for_status()
+        with open(tmp_path, "wb") as f:
+            f.write(r.content)
+    else:
+        import subprocess, sys
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "gdown", "-q"])
+        import gdown
+        gdown.download(id=gdrive_id, output=tmp_path, quiet=False)
+    return joblib.load(tmp_path)
 
 # ==========================================
 # STREAMLIT UI
 # ==========================================
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+import plotly.graph_objects as go
+
 st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
 
 # ==== ENCABEZADO ====
 st.markdown("""
-<div style='background:linear-gradient(90deg,#002D62,#0055A4,#0078D7);color:white;
-text-align:center;padding:1.5rem 1rem;border-radius:12px;margin-bottom:28px;'>
-<h1>Póliza Dormitorios</h1><p><strong>Seguros Sigma</strong></p></div>
+<style>
+.header {
+    background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
+    color: white; text-align: center; padding: 1.5rem 1rem;
+    border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    margin-bottom: 28px;
+}
+.header h1 { font-size: 1.8rem; font-weight: 700; margin: 0; }
+.header p { font-size: 1.3rem; color: white; margin-top: 8px; font-weight: 600; }
+div.stButton > button:first-child {
+    background: linear-gradient(90deg, #002D62, #0055A4, #0078D7);
+    color: white; font-weight: 600; border-radius: 10px; border: none;
+    padding: 0.6rem 1.2rem; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+.footer {
+    background-color: #f2f2f2; color: #333; font-size: 0.85rem;
+    text-align: center; padding: 0.8rem; border-radius: 8px;
+    margin-top: 40px; border-top: 2px solid #0078D7;
+}
+.footer a { color: #0078D7; text-decoration: none; font-weight: 600; }
+.footer a:hover { text-decoration: underline; }
+</style>
+<div class="header">
+    <h1>Póliza Dormitorios</h1>
+    <p><strong>Seguros Sigma</strong></p>
+</div>
 """, unsafe_allow_html=True)
 
 # ==== FORMULARIO ====
 st.write("👤 Ingrese los datos del estudiante:")
 
-objetos = load_model_objects()
-preprocess = objetos["preprocess"]
-modelos_freq = objetos["modelos_freq"]
-modelos_sev = objetos["modelos_sev"]
-
-# ==== ESTADO INICIAL ====
-if "gastos" not in st.session_state:
-    st.session_state["gastos"] = 20
-if "utilidad" not in st.session_state:
-    st.session_state["utilidad"] = 10
-if "impuestos" not in st.session_state:
-    st.session_state["impuestos"] = 5
-if "pred_ok" not in st.session_state:
-    st.session_state["pred_ok"] = False
+try:
+    objetos = load_model_objects()
+    preprocess = objetos["preprocess"]
+    modelos_freq = objetos["modelos_freq"]
+    modelos_sev = objetos["modelos_sev"]
+except Exception as e:
+    st.error(f"No se pudo cargar el modelo: {e}")
+    st.stop()
 
 col1, col2 = st.columns(2)
 with col1:
     anio = st.selectbox("🎓 Año cursado", ["1ro año", "2do año", "3ro año", "4to año", "posgrado"], index=3)
     area = st.selectbox("🏫 Área de estudios", ["Administracion", "Humanidades", "Ciencias", "Otro"], index=1)
-    calif_prom = st.number_input("📊 Calificación promedio", 0.0, 10.0, 7.01, step=0.01)
+    calif_prom = st.number_input("📊 Calificación promedio", min_value=0.0, max_value=10.0, value=7.01, step=0.01, format="%.2f")
     dos_mas = st.selectbox("👥 ¿2 o más inquilinos?", ["No", "Sí"], index=0)
 with col2:
     en_campus = st.selectbox("🏠 ¿Vive fuera del campus?", ["No", "Sí"], index=1)
     if en_campus == "No":
-        dist_campus = 0.0
+        dist_campus = st.number_input("📏 Distancia al campus (km)", min_value=0.0, max_value=0.0, value=0.0, step=0.0, format="%.6f", disabled=True)
     else:
-        dist_campus = st.number_input("📏 Distancia al campus (km)", 0.0, value=1.111582, step=0.000001)
+        dist_campus = st.number_input("📏 Distancia al campus (km)", min_value=0.0, value=1.111582, step=0.000001, format="%.6f")
     genero = st.selectbox("⚧️ Género", ["Masculino", "Femenino", "Otro", "No respuesta"], index=0)
     extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
 
-# ==== BOTÓN CALCULAR ====
+# ==== BOTÓN DE CÁLCULO ====
 if st.button("🔢 Calcular prima pura"):
     nuevo = pd.DataFrame({
         'año_cursado': [anio],
@@ -182,54 +232,74 @@ if st.button("🔢 Calcular prima pura"):
     })
 
     try:
-        df_pred = predecir_prima_pura_total(nuevo, NUM_COLS, CAT_COLS, COBERTURAS,
-                                            preprocess, modelos_freq, modelos_sev)
-        prima_total = df_pred["prima_pura_total"].iloc[0]
-        st.session_state["prima_pura_total"] = prima_total
-        st.session_state["pred_ok"] = True
-
+        df_pred = predecir_prima_pura_total(
+            nuevo, NUM_COLS, CAT_COLS, COBERTURAS,
+            preprocess, modelos_freq, modelos_sev
+        )
         st.success("✅ Predicción realizada con éxito")
 
-        # === Mostrar tabla ===
-        st.markdown("### 💵 Prima por cobertura (USD)")
-        st.dataframe(df_pred[COBERTURAS].round(3))
-        st.metric("💰 Prima pura total (USD)", f"{prima_total:,.4f}")
+        TITULOS = {
+            "Gastos_Adicionales_siniestros_monto": "💼 Gastos Adicionales",
+            "Contenidos_siniestros_monto": "🏠 Contenidos",
+            "Resp_Civil_siniestros_monto": "⚖️ Responsabilidad Civil",
+            "Gastos_Medicos_RC_siniestros_monto": "🩺 Gastos Médicos RC",
+        }
+        headers = [f"<b>{TITULOS.get(c, c)}</b>" for c in COBERTURAS]
+        cells = [df_pred[c].round(4) for c in COBERTURAS]
 
+        fig = go.Figure(data=[go.Table(
+            header=dict(values=headers, fill_color="#0055A4", align="center", font=dict(color="white", size=13)),
+            cells=dict(values=cells, fill_color="#F8FAFF", align="center", font=dict(color="#002D62", size=12))
+        )])
+        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=160)
+
+        st.markdown("## 💵 Prima por cobertura (USD)")
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+        st.markdown("## 💰 Prima pura total (USD)")
+        st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
+
+        st.session_state["prima_pura_total"] = df_pred["prima_pura_total"].iloc[0]
+
+        # ==== BLOQUE: CÁLCULO DE PRIMA COMERCIAL ====
+        if "prima_pura_total" in st.session_state:
+            st.markdown("### 💸 Cálculo de Prima Comercial")
+            gastos = st.slider("Gastos administrativos (%)", 0, 50, 20)
+            utilidad = st.slider("Utilidad (%)", 0, 30, 10)
+            impuestos = st.slider("Impuestos (%)", 0, 20, 5)
+            prima_pura = st.session_state["prima_pura_total"]
+            factor_total = 1 + (gastos + utilidad + impuestos)/100
+            prima_comercial = prima_pura * factor_total
+            st.markdown(f"""
+            | Concepto | % | Valor (USD) |
+            |-----------|---|-------------|
+            | Prima pura | — | {prima_pura:.2f} |
+            | Gastos administrativos | {gastos}% | {prima_pura*gastos/100:.2f} |
+            | Utilidad | {utilidad}% | {prima_pura*utilidad/100:.2f} |
+            | Impuestos | {impuestos}% | {prima_pura*impuestos/100:.2f} |
+            | **Prima comercial total** | — | **{prima_comercial:.2f}** |
+            """)
+
+        # (Aquí seguiría el bloque de perfil de riesgo y descarga exactamente igual)
     except Exception as e:
         st.error(f"Error al predecir: {e}")
-        st.session_state["pred_ok"] = False
+        st.stop()
 
-# ==== BLOQUE PRIMA COMERCIAL ====
-if st.session_state.get("pred_ok", False):
-    st.markdown("### 💸 Cálculo de Prima Comercial")
+# ==== INFO TÉCNICA ====
+with st.expander("🔧 Información técnica"):
+    import sklearn, numpy, scipy, pandas, joblib as jb
+    st.write({
+        "scikit_learn": sklearn.__version__,
+        "numpy": numpy.__version__,
+        "scipy": scipy.__version__,
+        "pandas": pandas.__version__,
+        "joblib": jb.__version__
+    })
 
-    gastos = st.slider("Gastos administrativos (%)", 0, 50, 
-                       value=st.session_state["gastos"], key="gastos")
-    utilidad = st.slider("Utilidad (%)", 0, 30, 
-                         value=st.session_state["utilidad"], key="utilidad")
-    impuestos = st.slider("Impuestos (%)", 0, 20, 
-                          value=st.session_state["impuestos"], key="impuestos")
-
-    prima_pura = st.session_state["prima_pura_total"]
-    factor_total = 1 + (gastos + utilidad + impuestos) / 100
-    prima_comercial = prima_pura * factor_total
-
-    st.markdown(f"""
-    | Concepto | % | Valor (USD) |
-    |-----------|---|-------------|
-    | Prima pura | — | {prima_pura:.2f} |
-    | Gastos administrativos | {gastos}% | {prima_pura*gastos/100:.2f} |
-    | Utilidad | {utilidad}% | {prima_pura*utilidad/100:.2f} |
-    | Impuestos | {impuestos}% | {prima_pura*impuestos/100:.2f} |
-    | **Prima comercial total** | — | **{prima_comercial:.2f}** |
-    """)
-
-# ==== PIE ====
+# ==== PIE DE PÁGINA ====
 st.markdown(f"""
-<div style='background-color:#f2f2f2;color:#333;font-size:0.85rem;
-text-align:center;padding:0.8rem;border-radius:8px;margin-top:40px;
-border-top:2px solid #0078D7;'>
-© {datetime.now().year} Desarrollado con 
-<a href="https://streamlit.io" target="_blank">Streamlit</a> · 💡Equipo Riskbusters - Universidad Nacional de Colombia
+<div class="footer">
+    © {datetime.now().year} Desarrollado con 
+    <a href="https://streamlit.io" target="_blank">Streamlit</a> ·💡Equipo Riskbusters - Universidad Nacional de Colombia
 </div>
 """, unsafe_allow_html=True)
