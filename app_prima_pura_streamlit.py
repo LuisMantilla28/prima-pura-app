@@ -289,6 +289,7 @@ with col2:
     genero = st.selectbox("⚧️ Género", ["Masculino", "Femenino", "Otro", "No respuesta"], index=0)
     extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
 
+
 # ==== BOTÓN DE CÁLCULO ====
 if st.button("🔢 Calcular prima pura"):
     nuevo = pd.DataFrame({
@@ -301,223 +302,164 @@ if st.button("🔢 Calcular prima pura"):
         'calif_promedio': [calif_prom],
         'distancia_al_campus': [dist_campus]
     })
-
     try:
         df_pred = predecir_prima_pura_total(
             nuevo, NUM_COLS, CAT_COLS, COBERTURAS, preprocess, modelos_freq, modelos_sev
         )
-        st.success("✅ Predicción realizada con éxito")
-
-        # ==== TABLA (Plotly con nombres personalizados y orden correcto) ====
-        TITULOS = {
-            "Gastos_Adicionales_siniestros_monto": "💼 Gastos Adicionales",
-            "Contenidos_siniestros_monto": "🏠 Contenidos",
-            "Resp_Civil_siniestros_monto": "⚖️ Responsabilidad Civil",
-            "Gastos_Medicos_RC_siniestros_monto": "🩺 Gastos Médicos RC",
-        }
-        headers = [f"<b>{TITULOS.get(c, c)}</b>" for c in COBERTURAS]
-        cells = [df_pred[c].round(4) for c in COBERTURAS]
-
-        fig = go.Figure(data=[go.Table(
-            header=dict(
-                values=headers,
-                fill_color="#0055A4",
-                align="center",
-                font=dict(color="white", size=13)
-            ),
-            cells=dict(
-                values=cells,
-                fill_color="#F8FAFF",
-                align="center",
-                font=dict(color="#002D62", size=12)
-            )
-        )])
-        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=160)
-
-        # ==== TÍTULO GRANDE PARA LA TABLA ====
-        st.markdown("""
-        <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; margin-bottom:0.3rem;'>
-         💵 Prima por cobertura (USD)
-        </h2>""", unsafe_allow_html=True)
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-
-        # ==== MÉTRICA PRINCIPAL ====
-        st.markdown("""
-        <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; margin-top:0rem; margin-bottom:0.3rem;'>
-         💰 Prima pura total (USD)
-        </h2>""", unsafe_allow_html=True)
-        st.metric("", f"{df_pred['prima_pura_total'].iloc[0]:,.4f}")
+        st.session_state["df_pred"] = df_pred
         st.session_state["prima_pura_total"] = df_pred["prima_pura_total"].iloc[0]
-
-
-        # ==== BLOQUE: CÁLCULO DE PRIMA COMERCIAL ====
-        if "prima_pura_total" in st.session_state:
-            st.markdown("### 💸 Cálculo de Prima Comercial")
-            gastos = st.slider("Gastos administrativos (%)", 0, 50, 20)
-            utilidad = st.slider("Utilidad (%)", 0, 30, 10)
-            impuestos = st.slider("Impuestos (%)", 0, 20, 5)
-
-            prima_pura = st.session_state["prima_pura_total"]
-            factor_total = 1 + (gastos + utilidad + impuestos)/100
-            prima_comercial = prima_pura * factor_total
-
-            st.markdown(f"""
-            | Concepto | % | Valor (USD) |
-            |-----------|---|-------------|
-            | Prima pura | — | {prima_pura:.2f} |
-            | Gastos administrativos | {gastos}% | {prima_pura*gastos/100:.2f} |
-            | Utilidad | {utilidad}% | {prima_pura*utilidad/100:.2f} |
-            | Impuestos | {impuestos}% | {prima_pura*impuestos/100:.2f} |
-            | **Prima comercial total** | — | **{prima_comercial:.2f}** |
-            """)
-
-        # ==========================================================
-        # 🧭 VISUALIZACIÓN COMPLETA DEL PERFIL DE RIESGO
-        # ==========================================================
-        inq = int(_to_int(dos_mas))
-        camp = int(_to_int(en_campus))
-        ext = int(_to_int(extintor))
-
-        # --- Clasificación y factores ---
-        if inq == 1 and camp == 1 and ext == 0:
-            nivel_riesgo = "Alto"
-            factores = [
-                "🏠 Vive <b>fuera del campus</b>.",
-                "👥 Tiene <b>2 o más inquilinos</b>.",
-                "🔥 No cuenta con <b>extintor</b>."
-            ]
-        elif (inq == 1 and camp == 0 and ext == 0):
-            nivel_riesgo = "Medio"
-            factores = [
-                "🏠 Vive <b>dentro del campus</b>.",
-                "👥 Tiene <b>2 o más inquilinos</b>.",
-                "🔥 No cuenta con <b>extintor</b>."
-            ]
-        elif (inq == 0 and camp == 1 and ext == 0):
-            nivel_riesgo = "Medio"
-            factores = [
-                "🏠 Vive <b>fuera del campus</b>.",
-                "👤 No comparte con otros inquilinos.",
-                "🔥 No cuenta con <b>extintor</b>."
-            ]
-        elif inq == 1 and camp == 1 and ext == 1:
-            nivel_riesgo = "Medio-alto"
-            factores = [
-                "🏠 Vive <b>fuera del campus</b>.",
-                "👥 Tiene <b>2 o más inquilinos</b>.",
-                "🧯 Cuenta con <b>extintor</b>."
-            ]
-        elif (inq == 0 and camp == 1 and ext == 1):
-            nivel_riesgo = "Medio-bajo"
-            factores = [
-                "🏠 Vive <b>fuera del campus</b>.",
-                "👤 No comparte con otros inquilinos.",
-                "🧯 Cuenta con <b>extintor</b>."
-            ]
-        elif (inq == 1 and camp == 0 and ext == 1):
-            nivel_riesgo = "Medio-bajo"
-            factores = [
-                "🏠 Vive <b>fuera del campus</b>.",
-                "👥 Tiene <b>2 o más inquilinos</b>.",
-                "🧯 Cuenta con <b>extintor</b>."
-            ]
-        elif (inq == 0 and camp == 0 and ext == 0):
-            nivel_riesgo = "Bajo"
-            factores = [
-                "🏠 Vive <b>dentro del campus</b>.",
-                "👤 No comparte con otros inquilinos.",
-                "🔥 No cuenta con <b>extintor</b>."
-            ]
-        else:
-            nivel_riesgo = "Bajo"
-            factores = [
-                "🏠 Vive <b>dentro del campus</b>.",
-                "👤 No comparte con otros inquilinos.",
-                "🧯 Tiene <b>extintor</b>."
-            ]
-
-        # --- Barra de colores con niveles ---
-        niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
-        colores = ["#80CFA9", "#FFF176", "#FFD54F", "#FB8C00", "#E53935"]  # tonos vivos
-        idx = niveles.index(nivel_riesgo)
-
-        # --- Generar HTML de segmentos ---
-        segmentos_html = "".join([
-            f"<div class='segmento' style='background:{col}; opacity:{'1' if i==idx else '0.35'};'></div>"
-            for i, col in enumerate(colores)
-        ])
-
-        # --- Lista de factores ---
-        factores_html = "".join([f"<li>{f}</li>" for f in factores])
-
-        # --- HTML final (un solo bloque, sin fragmentar) ---
-        html_final = f"""
-        <div class="tarjeta">
-            <h3 class="titulo">🏷️ Nivel de Riesgo: {nivel_riesgo}</h3>
-            <div class="barra-container">
-                <div class="barra">{segmentos_html}</div>
-                <div class="etiquetas">
-                    {''.join([f"<span>{niv}</span>" for niv in niveles])}
-                </div>
-                <div class="flecha" style="left: calc({idx} * 20% + 10%);"></div>
-            </div>
-            <ul class="factores">{factores_html}</ul>
-        </div>
-
-        <style>
-        .tarjeta {{
-            background:#F8FAFF;
-            border-radius:16px;
-            padding:1.5rem;
-            box-shadow:0 3px 12px rgba(0,0,0,0.15);
-            margin-top:28px;
-            animation: fadeIn 0.9s ease-in-out;
-        }}
-        .titulo {{
-            color:#003366;
-            text-align:center;
-            font-weight:800;
-            font-size:1.4rem;
-            margin-bottom:1rem;
-        }}
-        .barra-container {{ position:relative; margin-bottom:1.4rem; }}
-        .barra {{ display:flex; height:24px; border-radius:6px; overflow:hidden; }}
-        .segmento {{ flex:1; transition:opacity 0.4s ease; }}
-        .etiquetas {{
-            display:flex; justify-content:space-between; margin-top:6px;
-            font-size:0.9rem; font-weight:600; color:#003366;
-        }}
-        .flecha {{
-            position:absolute; top:24px; transform:translateX(-50%);
-            width:0; height:0;
-            border-left: 9px solid transparent;
-            border-right:9px solid transparent;
-            border-top: 12px solid #003366;
-            transition:left 0.5s ease;
-        }}
-        .factores {{
-            margin-top:12px; margin-left:20px;
-            color:#002D62; font-size:1.05rem; line-height:1.6;
-        }}
-        @keyframes fadeIn {{
-            0% {{opacity:0; transform:translateY(10px);}}
-            100% {{opacity:1; transform:translateY(0);}}
-        }}
-        </style>
-        """
-        st.markdown(html_final, unsafe_allow_html=True)
-
-        # ==== DESCARGA ====
-        st.download_button(
-            "⬇️ Descargar CSV",
-            data=df_pred.to_csv(index=False).encode("utf-8"),
-            file_name="prediccion_individual.csv",
-            mime="text/csv"
-        )
-
+        st.session_state["calculada"] = True
+        st.success("✅ Predicción realizada con éxito")
     except Exception as e:
         st.error(f"Error al predecir: {e}")
         st.stop()
+
+# Mostrar resultados si ya se calculó
+if st.session_state.get("calculada", False):
+    df_pred = st.session_state["df_pred"]
+
+    # ==== TABLA ====
+    TITULOS = {
+        "Gastos_Adicionales_siniestros_monto": "💼 Gastos Adicionales",
+        "Contenidos_siniestros_monto": "🏠 Contenidos",
+        "Resp_Civil_siniestros_monto": "⚖️ Responsabilidad Civil",
+        "Gastos_Medicos_RC_siniestros_monto": "🩺 Gastos Médicos RC",
+    }
+    headers = [f"<b>{TITULOS.get(c, c)}</b>" for c in COBERTURAS]
+    cells = [df_pred[c].round(4) for c in COBERTURAS]
+
+    fig = go.Figure(data=[go.Table(
+        header=dict(values=headers, fill_color="#0055A4", align="center",
+                    font=dict(color="white", size=13)),
+        cells=dict(values=cells, fill_color="#F8FAFF", align="center",
+                   font=dict(color="#002D62", size=12))
+    )])
+    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=160)
+
+    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima por cobertura (USD)</h2>",
+                unsafe_allow_html=True)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+    # ==== MÉTRICA PRINCIPAL ====
+    prima_pura = st.session_state["prima_pura_total"]
+    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💰 Prima pura total (USD)</h2>",
+                unsafe_allow_html=True)
+    st.metric("", f"{prima_pura:,.4f}")
+
+    # ==== SLIDERS REACTIVOS ====
+    st.markdown("### 💸 Cálculo de Prima Comercial")
+    gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
+    utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
+    impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
+
+    factor_total = 1 + (gastos + utilidad + impuestos) / 100
+    prima_comercial = prima_pura * factor_total
+
+    st.markdown(f"""
+    | Concepto | % | Valor (USD) |
+    |-----------|---|-------------|
+    | Prima pura | — | {prima_pura:.2f} |
+    | Gastos administrativos | {gastos}% | {prima_pura*gastos/100:.2f} |
+    | Utilidad | {utilidad}% | {prima_pura*utilidad/100:.2f} |
+    | Impuestos | {impuestos}% | {prima_pura*impuestos/100:.2f} |
+    | **Prima comercial total** | — | **{prima_comercial:.2f}** |
+    """)
+
+    # ==========================================================
+    # 🧭 VISUALIZACIÓN COMPLETA DEL PERFIL DE RIESGO
+    # ==========================================================
+    inq = int(_to_int(dos_mas))
+    camp = int(_to_int(en_campus))
+    ext = int(_to_int(extintor))
+
+    # --- Clasificación y factores ---
+    if inq == 1 and camp == 1 and ext == 0:
+        nivel_riesgo = "Alto"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👥 Tiene <b>2 o más inquilinos</b>.",
+                    "🔥 No cuenta con <b>extintor</b>."]
+    elif (inq == 1 and camp == 0 and ext == 0):
+        nivel_riesgo = "Medio"
+        factores = ["🏠 Vive <b>dentro del campus</b>.",
+                    "👥 Tiene <b>2 o más inquilinos</b>.",
+                    "🔥 No cuenta con <b>extintor</b>."]
+    elif (inq == 0 and camp == 1 and ext == 0):
+        nivel_riesgo = "Medio"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👤 No comparte con otros inquilinos.",
+                    "🔥 No cuenta con <b>extintor</b>."]
+    elif inq == 1 and camp == 1 and ext == 1:
+        nivel_riesgo = "Medio-alto"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👥 Tiene <b>2 o más inquilinos</b>.",
+                    "🧯 Cuenta con <b>extintor</b>."]
+    elif (inq == 0 and camp == 1 and ext == 1):
+        nivel_riesgo = "Medio-bajo"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👤 No comparte con otros inquilinos.",
+                    "🧯 Cuenta con <b>extintor</b>."]
+    elif (inq == 1 and camp == 0 and ext == 1):
+        nivel_riesgo = "Medio-bajo"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👥 Tiene <b>2 o más inquilinos</b>.",
+                    "🧯 Cuenta con <b>extintor</b>."]
+    elif (inq == 0 and camp == 0 and ext == 0):
+        nivel_riesgo = "Bajo"
+        factores = ["🏠 Vive <b>dentro del campus</b>.",
+                    "👤 No comparte con otros inquilinos.",
+                    "🔥 No cuenta con <b>extintor</b>."]
+    else:
+        nivel_riesgo = "Bajo"
+        factores = ["🏠 Vive <b>dentro del campus</b>.",
+                    "👤 No comparte con otros inquilinos.",
+                    "🧯 Tiene <b>extintor</b>."]
+
+    niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
+    colores = ["#80CFA9", "#FFF176", "#FFD54F", "#FB8C00", "#E53935"]
+    idx = niveles.index(nivel_riesgo)
+
+    segmentos_html = "".join([
+        f"<div class='segmento' style='background:{col}; opacity:{'1' if i==idx else '0.35'};'></div>"
+        for i, col in enumerate(colores)
+    ])
+
+    factores_html = "".join([f"<li>{f}</li>" for f in factores])
+    html_final = f"""
+    <div class="tarjeta">
+        <h3 class="titulo">🏷️ Nivel de Riesgo: {nivel_riesgo}</h3>
+        <div class="barra-container">
+            <div class="barra">{segmentos_html}</div>
+            <div class="etiquetas">
+                {''.join([f"<span>{niv}</span>" for niv in niveles])}
+            </div>
+            <div class="flecha" style="left: calc({idx} * 20% + 10%);"></div>
+        </div>
+        <ul class="factores">{factores_html}</ul>
+    </div>
+    <style>
+    .tarjeta {{
+        background:#F8FAFF; border-radius:16px; padding:1.5rem;
+        box-shadow:0 3px 12px rgba(0,0,0,0.15); margin-top:28px;
+        animation: fadeIn 0.9s ease-in-out;
+    }}
+    .titulo {{ color:#003366; text-align:center; font-weight:800;
+        font-size:1.4rem; margin-bottom:1rem; }}
+    .barra-container {{ position:relative; margin-bottom:1.4rem; }}
+    .barra {{ display:flex; height:24px; border-radius:6px; overflow:hidden; }}
+    .segmento {{ flex:1; transition:opacity 0.4s ease; }}
+    .etiquetas {{ display:flex; justify-content:space-between; margin-top:6px;
+        font-size:0.9rem; font-weight:600; color:#003366; }}
+    .flecha {{ position:absolute; top:24px; transform:translateX(-50%);
+        width:0; height:0; border-left:9px solid transparent;
+        border-right:9px solid transparent; border-top:12px solid #003366; }}
+    .factores {{ margin-top:12px; margin-left:20px; color:#002D62;
+        font-size:1.05rem; line-height:1.6; }}
+    </style>
+    """
+    st.markdown(html_final, unsafe_allow_html=True)
+
+
+
 
 # ==== INFO TÉCNICA ====
 with st.expander("🔧 Información técnica"):
