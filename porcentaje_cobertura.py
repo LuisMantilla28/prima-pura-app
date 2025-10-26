@@ -338,6 +338,7 @@ def main():
     st.markdown(EXECUTIVE_CSS, unsafe_allow_html=True)
 
     # Header
+    # Header
     top_logo, top_title = st.columns([1, 6])
     with top_logo:
         if LOGO_URL:
@@ -345,7 +346,17 @@ def main():
             st.image(LOGO_URL, width=150, use_container_width=False)
     with top_title:
         st.markdown("<h1 class='title-text' style='margin-bottom:0rem; margin-top:3.5rem;'>Risk Profiling Dashboard</h1>", unsafe_allow_html=True)
-        st.markdown("<h2 class='subtitle-text' style='margin-bottom:0rem; margin-top:3.5rem;'>Risk Profiling Dashboard</h2>", unsafe_allow_html=True)
+        st.markdown(
+            """
+            <p style='font-size:0.95rem; color:#374151; margin-top:0.4rem;'>
+            Esta herramienta interactiva permite visualizar y analizar el comportamiento del riesgo en pólizas de seguros para estudiantes universitarios. 
+            A partir de los resultados de un modelo estadístico, el aplicativo integra datos de frecuencia, severidad y factores de riesgo para cada cobertura, 
+            generando métricas y perfiles que facilitan la interpretación actuarial y la toma de decisiones basada en evidencia.
+            </p>
+            """,
+            unsafe_allow_html=True
+        )
+
 
     # Datos
     mod = load_remote_module(REMOTE_PY_URL, REMOTE_MODULE_NAME)
