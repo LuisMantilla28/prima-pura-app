@@ -268,7 +268,7 @@ def try_remote_get_metrics(mod) -> Optional[Dict[str, Any]]:
 # -------------------------------------------------------------
 # UI helpers
 # -------------------------------------------------------------
-def fmt_float(x, nd=2):
+def fmt_float(x, nd=4):
     try:
         return f"{float(x):,.{nd}f}"
     except Exception:
