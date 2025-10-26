@@ -419,7 +419,7 @@ if st.session_state.get("calculada", False):
     prima_pura = st.session_state["prima_pura_total"]
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💰 Prima pura total (USD)</h2>",
                 unsafe_allow_html=True)
-    st.metric("", f"{prima_pura:,.4f}")
+    st.metric("", f"{prima_pura:,.2f}")
 
     # ==== SLIDERS REACTIVOS ====
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>",
