@@ -474,6 +474,55 @@ if st.session_state.get("calculada", False):
     factor_total = 1 + (gastos + utilidad + impuestos) / 100
     prima_pura = st.session_state["prima_pura_total"]
     prima_comercial = prima_pura * factor_total
+
+    # ==========================================================
+    # 🧭 CLASIFICACIÓN DEL PERFIL DE RIESGO 
+    # ==========================================================
+    inq = int(_to_int(dos_mas))
+    camp = int(_to_int(en_campus))
+    ext = int(_to_int(extintor))
+    
+    # --- Clasificación y factores ---
+    if inq == 1 and camp == 1 and ext == 0:
+        nivel_riesgo = "Alto"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👥 Tiene <b>2 o más inquilinos</b>.",
+                    "🔥 No cuenta con <b>extintor</b>."]
+    elif (inq == 1 and camp == 0 and ext == 0):
+        nivel_riesgo = "Medio"
+        factores = ["🏠 Vive <b>dentro del campus</b>.",
+                    "👥 Tiene <b>2 o más inquilinos</b>.",
+                    "🔥 No cuenta con <b>extintor</b>."]
+    elif (inq == 0 and camp == 1 and ext == 0):
+        nivel_riesgo = "Medio"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👤 No comparte con otros inquilinos.",
+                    "🔥 No cuenta con <b>extintor</b>."]
+    elif inq == 1 and camp == 1 and ext == 1:
+        nivel_riesgo = "Medio-alto"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👥 Tiene <b>2 o más inquilinos</b>.",
+                    "🧯 Cuenta con <b>extintor</b>."]
+    elif (inq == 0 and camp == 1 and ext == 1):
+        nivel_riesgo = "Medio-bajo"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👤 No comparte con otros inquilinos.",
+                    "🧯 Cuenta con <b>extintor</b>."]
+    elif (inq == 1 and camp == 0 and ext == 1):
+        nivel_riesgo = "Medio-bajo"
+        factores = ["🏠 Vive <b>fuera del campus</b>.",
+                    "👥 Tiene <b>2 o más inquilinos</b>.",
+                    "🧯 Cuenta con <b>extintor</b>."]
+    elif (inq == 0 and camp == 0 and ext == 0):
+        nivel_riesgo = "Bajo"
+        factores = ["🏠 Vive <b>dentro del campus</b>.",
+                    "👤 No comparte con otros inquilinos.",
+                    "🔥 No cuenta con <b>extintor</b>."]
+    else:
+        nivel_riesgo = "Bajo"
+        factores = ["🏠 Vive <b>dentro del campus</b>.",
+                    "👤 No comparte con otros inquilinos.",
+                    "🧯 Tiene <b>extintor</b>."]
     
     # ==========================================================
     # 💵 Tabla Prima Comercial + Barra de Riesgo lado a lado
@@ -504,9 +553,6 @@ if st.session_state.get("calculada", False):
         """, unsafe_allow_html=True)
     
     with col_der:
-        # ==========================================================
-        # 🧭 VISUALIZACIÓN DEL PERFIL DE RIESGO
-        # ==========================================================
         niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
         colores = ["#80CFA9", "#FFF176", "#FFD54F", "#FB8C00", "#E53935"]
         idx = niveles.index(nivel_riesgo)
@@ -551,7 +597,8 @@ if st.session_state.get("calculada", False):
         """
         st.markdown(html_final, unsafe_allow_html=True)
     
-    
+        
+        
 # ==== INFO TÉCNICA ====
 with st.expander("🔧 Información técnica"):
     import sklearn, numpy, scipy, pandas, joblib as jb
