@@ -183,10 +183,34 @@ LOGO_URL = "https://raw.githubusercontent.com/LuisMantilla28/prima-pura-app/main
 st.set_page_config(
     page_title="Estimador de Prima Pura",
     page_icon=LOGO_URL,     # <- icono de la pestaña
-    layout="centered"
+    layout="wide"
 )
 
+# ==== ESTILO GLOBAL: forzar fondo blanco ====
+st.markdown("""
+<style>
+/* Fondo blanco absoluto en toda la app */
+html, body, [class*="stAppViewContainer"], [class*="stApp"] {
+    background-color: white !important;
+    color: #002D62 !important;
+}
 
+/* Evitar herencia de modo oscuro del dispositivo */
+[data-testid="stAppViewContainer"] {
+    background-color: white !important;
+}
+
+/* Ajustar color del sidebar si usas uno */
+[data-testid="stSidebar"] {
+    background-color: #F8FAFF !important;
+}
+
+/* Textos y enlaces */
+h1, h2, h3, h4, h5, h6, p, span, div {
+    color: #002D62 !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ==== ENCABEZADO ====
 st.markdown("""
