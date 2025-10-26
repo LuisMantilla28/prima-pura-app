@@ -443,7 +443,7 @@ if st.session_state.get("calculada", False):
         box-shadow:0 3px 10px rgba(0,0,0,0.25);
         margin-top:10px;
     '>
-     💰 {prima_comercial:,.2f} USD
+      {prima_comercial:,.2f} USD
     </div>
     """, unsafe_allow_html=True)
 
