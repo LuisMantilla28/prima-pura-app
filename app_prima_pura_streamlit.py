@@ -458,7 +458,24 @@ if st.session_state.get("calculada", False):
     prima_pura = st.session_state["prima_pura_total"]
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💰 Prima pura total (USD)</h2>",
                 unsafe_allow_html=True)
-    st.metric("", f"{prima_pura:,.2f}")
+    #st.metric("", f"{prima_pura:,.2f}")
+
+    st.markdown(f"""
+    <div style='
+        background:linear-gradient(90deg,#E8F1FF,#F4F8FF);
+        border:2px solid #0078D7;
+        border-radius:12px;
+        padding:14px;
+        text-align:center;
+        font-size:1.6rem;
+        font-weight:800;
+        color:#003366;
+        box-shadow:0 2px 6px rgba(0,0,0,0.1);
+    '>
+    💰 {prima_pura:,.2f} USD
+    </div>
+    """, unsafe_allow_html=True)
+
 
     # ==== SLIDERS REACTIVOS ====
     st.markdown("<hr style='border: 1px solid #E6EAF0; margin: 24px 0;'>", unsafe_allow_html=True)
