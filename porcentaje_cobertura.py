@@ -354,11 +354,11 @@ def main():
     cambio_por_cobertura: Dict[str, pd.DataFrame] = data.get("cambio_por_cobertura", {})
     cambio_total: pd.DataFrame = data.get("cambio_total", pd.DataFrame())
     # NUEVA TABLA: Perfiles de riesgo con color de fila
-            with st.container(border=True):
-                st.markdown("### Perfiles de riesgo")
-                df_perf = get_niveles_table()
-                styler = style_by_risk(df_perf)
-                st.dataframe(styler, use_container_width=True, hide_index=True)
+    with st.container(border=True):
+        st.markdown("### Perfiles de riesgo")
+        df_perf = get_niveles_table()
+        styler = style_by_risk(df_perf)
+        st.dataframe(styler, use_container_width=True, hide_index=True)
 
     # FILA SUPERIOR
     row1_left, row1_right = st.columns([1.2, 3.8], gap="large")
