@@ -344,7 +344,7 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)
             st.image(LOGO_URL, width=150, use_container_width=False)
     with top_title:
-        st.markdown("<h1 class='title-text' style='margin-bottom:0rem; margin-top:3.5rem;'>Risk profiling</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 class='title-text' style='margin-bottom:0rem; margin-top:3.5rem;'>Risk Profiling Dashboard</h1>", unsafe_allow_html=True)
 
     # Datos
     mod = load_remote_module(REMOTE_PY_URL, REMOTE_MODULE_NAME)
@@ -369,10 +369,11 @@ def main():
             st.markdown("<br>", unsafe_allow_html=True)
             metrics = header_metrics.get(cobertura, {})
             g1, g2, g3, g4 = st.columns(4)
-            with g1: kpi("Media real de N", metrics.get("Media real de N", np.nan))
-            with g2: kpi("Media predicha de N", metrics.get("Media predicha de N", np.nan))
-            with g3: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan))
-            with g4: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan))
+            with g1: kpi("Frecuencia media observada", metrics.get("Media real de N", np.nan))
+            with g2: kpi("Frecuencia media  predicha", metrics.get("Media predicha de N", np.nan))
+            with g3: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan))
+            with g4: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan))
+            
 
     # Excel
     try:
