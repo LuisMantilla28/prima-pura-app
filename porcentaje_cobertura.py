@@ -314,9 +314,10 @@ def main():
     top_logo, top_title = st.columns([1, 6])
     with top_logo:
         if LOGO_URL:
-            st.image(LOGO_URL, width=64)
+            st.markdown("<br>", unsafe_allow_html=True)  # 👈 baja un poco el logo
+            st.image(LOGO_URL, width=90, use_container_width=False)  # 👈 más grande (antes era 64)
     with top_title:
-        st.markdown("<h1 class='title-text'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 class='title-text' style='margin-top:0.5rem;'>Dashboard de Coberturas y Métricas</h1>", unsafe_allow_html=True)
         st.markdown("<span style='color:#6b7280'>Frecuencia · Severidad · Prima esperada</span>", unsafe_allow_html=True)
 
     # Datos
