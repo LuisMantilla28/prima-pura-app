@@ -348,6 +348,75 @@ if st.session_state.get("calculada", False):
                 unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
+
+    
+    # ==========================================================
+    # 📋 Detalle de coberturas con descripción y monto máximo
+    # ==========================================================
+    st.markdown("<h3 style='color:#002D62; font-weight:800;'>🛡️ Detalle de coberturas y montos asegurados</h3>", unsafe_allow_html=True)
+    
+    # --- Crear DataFrame descriptivo ---
+    df_detalle = pd.DataFrame({
+        "Cobertura": [
+            "💼 Gastos Adicionales",
+            "🩺 Gastos Médicos RC",
+            "⚖️ Responsabilidad Civil",
+            "🏠 Contenidos"
+        ],
+        "Descripción": [
+            "Cubre gastos de alojamiento temporal, transporte y manutención durante reparaciones.",
+            "Reembolsa gastos médicos a terceros por accidentes o lesiones en la vivienda asegurada.",
+            "Indemniza daños materiales o personales causados a terceros dentro o fuera del inmueble.",
+            "Protege muebles, electrodomésticos y pertenencias personales dentro de la vivienda."
+        ],
+        "Monto máximo (USD)": [5000, 10000, 20000, 15000],
+        "Prima pura (USD)": [
+            df_pred["Gastos_Adicionales_siniestros_monto"].iloc[0],
+            df_pred["Gastos_Medicos_RC_siniestros_monto"].iloc[0],
+            df_pred["Resp_Civil_siniestros_monto"].iloc[0],
+            df_pred["Contenidos_siniestros_monto"].iloc[0],
+        ]
+    })
+    
+    # --- Calcular participación porcentual ---
+    df_detalle["% del total"] = (df_detalle["Prima pura (USD)"] / df_detalle["Prima pura (USD)"].sum() * 100).round(2)
+    
+    # --- Mostrar tabla con estilo azul corporativo ---
+    st.markdown(df_detalle.style
+        .set_table_styles([
+            {"selector": "thead th", "props": [("background-color", "#0055A4"), ("color", "white"), ("font-weight", "600"), ("text-align", "center")]},
+            {"selector": "tbody td", "props": [("text-align", "center"), ("color", "#002D62"), ("font-size", "0.95rem")]},
+            {"selector": "tbody tr:nth-child(even)", "props": [("background-color", "#F2F6FF")]}
+        ])
+        .hide(axis="index")
+        .format({"Monto máximo (USD)": "{:,.0f}", "Prima pura (USD)": "{:,.2f}", "% del total": "{:.2f}%"})._repr_html_(),
+        unsafe_allow_html=True
+    )
+    
+    # ==========================================================
+    # 🥧 Gráfico de torta (participación de cada cobertura)
+    # ==========================================================
+    fig_pie = go.Figure(
+        data=[go.Pie(
+            labels=df_detalle["Cobertura"],
+            values=df_detalle["Prima pura (USD)"],
+            hole=0.45,
+            textinfo="label+percent",
+            marker=dict(colors=["#0078D7", "#3399FF", "#66B2FF", "#99CCFF"]),
+            hoverinfo="label+value+percent"
+        )]
+    )
+    fig_pie.update_layout(
+        title=dict(text="Distribución porcentual de la prima pura por cobertura", font=dict(size=16, color="#002D62")),
+        showlegend=False,
+        height=350
+    )
+    st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
+
+
+
+    
+    
     # ==== MÉTRICA PRINCIPAL ====
     prima_pura = st.session_state["prima_pura_total"]
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💰 Prima pura total (USD)</h2>",
