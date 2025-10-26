@@ -439,7 +439,7 @@ if st.session_state.get("calculada", False):
             insidetextorientation="radial",  # asegura orientación legible
             marker=dict(colors=["#0078D7", "#3399FF", "#66B2FF", "#99CCFF"]),
             hoverinfo="label+value+percent",
-            pull=[0.03, 0.03, 0, 0],         # sutil separación para claridad
+            pull=[0, 0, 0, 0],         # sutil separación para claridad
             showlegend=False                 # quitamos leyenda para no duplicar
         )]
     )
