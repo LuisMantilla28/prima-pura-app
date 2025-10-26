@@ -8,54 +8,7 @@ import warnings
 from scipy.special import expit, logit
 from datetime import datetime
 
-# ---- Parche visual para header/toolbar oscuro ----
-st.markdown("""
-<style>
-/* Header superior y toolbar en claro */
-header[data-testid="stHeader"], [data-testid="stHeader"] {
-  background: #FFFFFF !important;
-}
-header[data-testid="stHeader"]::before {
-  background: #FFFFFF !important;
-}
-/* Línea inferior sutil (opcional) */
-header[data-testid="stHeader"] {
-  border-bottom: 1px solid #eaeaea !important;
-}
 
-/* Sidebar en claro (por si aparece banda oscura) */
-section[data-testid="stSidebar"] {
-  background: #F8FAFF !important;
-}
-
-/* Contenedor principal en claro */
-div[data-testid="stAppViewContainer"] {
-  background: #FFFFFF !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-EXECUTIVE_CSS = """
-<style>
-/* Forzar modo claro en toda la app */
-html, body, [class*="stAppViewContainer"] {
-  background-color: #FFFFFF !important;
-  color: #111111 !important;
-}
-
-/* Asegurar que los contenedores mantengan colores claros */
-.stApp {
-  background-color: #FFFFFF !important;
-  color: #111111 !important;
-}
-
-/* Ajustes menores para textos y bordes */
-div[data-testid="stMarkdown"] p {
-  color: #111111 !important;
-}
-</style>
-"""
 
 # ==========================================
 # CONFIG
@@ -233,8 +186,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# *** INYECTAR CSS LIGHT LO ANTES POSIBLE ***
-st.markdown(EXECUTIVE_CSS, unsafe_allow_html=True)
+
 
 # ==== ENCABEZADO ====
 st.markdown("""
