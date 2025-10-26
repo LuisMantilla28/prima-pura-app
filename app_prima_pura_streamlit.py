@@ -413,7 +413,7 @@ if st.session_state.get("calculada", False):
     # ==========================================================
     #st.markdown("<h3 style='color:#002D62; font-weight:800;'>🛡️ Detalle de coberturas y montos asegurados</h3>", unsafe_allow_html=True)
     
-    col_izq, col_der = st.columns([1.3, 1])
+    col_izq, col_der = st.columns([1.4, 1])
     
     with col_izq:
         st.markdown(df_detalle.style
@@ -440,9 +440,10 @@ if st.session_state.get("calculada", False):
             )]
         )
         fig_pie.update_layout(
-            title=dict(text="Distribución de la prima pura por cobertura", font=dict(size=16, color="#002D62")),
+            title=dict(text="Distribución de la prima pura por cobertura", font=dict(size=14, color="#002D62")),
             showlegend=False,
-            height=350
+            height=300,
+            margin=dict(t=20, b=10, l=0, r=0)
         )
         st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
 
@@ -453,6 +454,7 @@ if st.session_state.get("calculada", False):
     st.metric("", f"{prima_pura:,.2f}")
 
     # ==== SLIDERS REACTIVOS ====
+    st.markdown("<hr style='border: 1px solid #E6EAF0; margin: 24px 0;'>", unsafe_allow_html=True)
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>",
                 unsafe_allow_html=True)
     
