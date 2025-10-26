@@ -371,24 +371,46 @@ if st.session_state.get("calculada", False):
     st.markdown("""
     <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; 
     margin-top:0rem; margin-bottom:0.3rem;'>
-    💸 Prima Comercial (USD)
-    </h2>""", unsafe_allow_html=True)
-    gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
-    utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
-    impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
-
+     💸 Cálculo de Prima Comercial (USD)
+    </h2>
+    """, unsafe_allow_html=True)
+    
+    # === Sliders ===
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
+    with col2:
+        utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
+    with col3:
+        impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
+    
+    # === Cálculo ===
     factor_total = 1 + (gastos + utilidad + impuestos) / 100
+    prima_pura = st.session_state["prima_pura_total"]
     prima_comercial = prima_pura * factor_total
-
+    
+    # === Tabla personalizada (HTML + estilo coherente con azul corporativo) ===
     st.markdown(f"""
-    | Concepto | % | Valor (USD) |
-    |-----------|---|-------------|
-    | Prima pura | — | {prima_pura:.2f} |
-    | Gastos administrativos | {gastos}% | {prima_pura*gastos/100:.2f} |
-    | Utilidad | {utilidad}% | {prima_pura*utilidad/100:.2f} |
-    | Impuestos | {impuestos}% | {prima_pura*impuestos/100:.2f} |
-    | **Prima comercial total** | — | **{prima_comercial:.2f}** |
-    """)
+    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+    <thead style="background-color:#0055A4; color:white; font-weight:600;">
+    <tr>
+      <th style="padding:8px; text-align:center;">Concepto</th>
+      <th style="padding:8px; text-align:center;">%</th>
+      <th style="padding:8px; text-align:center;">Valor (USD)</th>
+    </tr>
+    </thead>
+    <tbody style="background-color:#F8FAFF; color:#002D62; font-size:1.05rem;">
+    <tr><td style="padding:6px;">Prima pura</td><td style="text-align:center;">—</td><td style="text-align:right;">{prima_pura:,.2f}</td></tr>
+    <tr><td style="padding:6px;">Gastos administrativos</td><td style="text-align:center;">{gastos}%</td><td style="text-align:right;">{prima_pura*gastos/100:,.2f}</td></tr>
+    <tr><td style="padding:6px;">Utilidad</td><td style="text-align:center;">{utilidad}%</td><td style="text-align:right;">{prima_pura*utilidad/100:,.2f}</td></tr>
+    <tr><td style="padding:6px;">Impuestos</td><td style="text-align:center;">{impuestos}%</td><td style="text-align:right;">{prima_pura*impuestos/100:,.2f}</td></tr>
+    <tr style="background-color:#E6F0FF; font-weight:800;">
+      <td style="padding:6px;">Prima comercial total</td><td style="text-align:center;">—</td>
+      <td style="text-align:right; color:#003366;">{prima_comercial:,.2f}</td>
+    </tr>
+    </tbody>
+    </table>
+    """, unsafe_allow_html=True)
 
     # ==========================================================
     # 🧭 VISUALIZACIÓN COMPLETA DEL PERFIL DE RIESGO
