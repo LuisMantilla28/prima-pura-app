@@ -414,18 +414,7 @@ if st.session_state.get("calculada", False):
     """, unsafe_allow_html=True)
 
     st.markdown("<hr style='border: 1px solid #E6EAF0; margin: 24px 0;'>", unsafe_allow_html=True)
-    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>", unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
-    with col2:
-        utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
-    with col3:
-        impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
-
-    factor_total = 1 + (gastos + utilidad + impuestos) / 100
-    prima_comercial = prima_pura * factor_total
+    #st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>", unsafe_allow_html=True)
 
     # ==== MÉTRICA VISUAL DE PRIMA COMERCIAL ====
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💸 Prima comercial total (USD)</h2>",
@@ -446,6 +435,17 @@ if st.session_state.get("calculada", False):
       {prima_comercial:,.2f} USD
     </div>
     """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
+    with col2:
+        utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
+    with col3:
+        impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
+
+    factor_total = 1 + (gastos + utilidad + impuestos) / 100
+    prima_comercial = prima_pura * factor_total
 
 
     inq = int(_to_int(dos_mas))
