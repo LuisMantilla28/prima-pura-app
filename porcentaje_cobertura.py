@@ -341,6 +341,7 @@ def main():
     with row1_right:
         with st.container(border=False):
           #  st.markdown("### Métricas clave")
+            st.markdown("<br>", unsafe_allow_html=True) 
             metrics = header_metrics.get(cobertura, {})
             g1, g2, g3, g4 = st.columns(4)
             with g1: kpi("Media real de N", metrics.get("Media real de N", np.nan))
