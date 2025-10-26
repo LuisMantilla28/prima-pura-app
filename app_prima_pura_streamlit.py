@@ -445,8 +445,186 @@ if st.session_state.get("calculada", False):
             height=350
         )
         st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
-    
-    
+
+
+
+
+
+        
+        # ==== MÉTRICA PRINCIPAL ====
+        prima_pura = st.session_state["prima_pura_total"]
+        st.markdown("<h2 style='color:#002D62; font-weight:800;'>💰 Prima pura total (USD)</h2>",
+                    unsafe_allow_html=True)
+        st.metric("", f"{prima_pura:,.2f}")
+        
+        # ====== Separador visual ======
+        st.markdown("<hr style='border: 1px solid #E6EAF0; margin: 30px 0;'>", unsafe_allow_html=True)
+        
+        # ==== SLIDERS REACTIVOS ====
+        st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>",
+                    unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            gastos = st.slider("Gastos administrativos (%)", 0, 50, 10, key="gastos")
+        with col2:
+            utilidad = st.slider("Utilidad (%)", 0, 30, 5, key="utilidad")
+        with col3:
+            impuestos = st.slider("Impuestos (%)", 0, 20, 2, key="impuestos")
+        
+        # === Cálculo ===
+        factor_total = 1 + (gastos + utilidad + impuestos) / 100
+        prima_pura = st.session_state["prima_pura_total"]
+        prima_comercial = prima_pura * factor_total
+        
+        # ==========================================================
+        # 🔎 CÁLCULO DEL NIVEL DE RIESGO (antes de mostrar visual)
+        # ==========================================================
+        inq = int(_to_int(dos_mas))
+        camp = int(_to_int(en_campus))
+        ext = int(_to_int(extintor))
+        
+        if inq == 1 and camp == 1 and ext == 0:
+            nivel_riesgo = "Alto"
+            factores = ["🏠 Vive <b>fuera del campus</b>.",
+                        "👥 Tiene <b>2 o más inquilinos</b>.",
+                        "🔥 No cuenta con <b>extintor</b>."]
+        elif (inq == 1 and camp == 0 and ext == 0):
+            nivel_riesgo = "Medio"
+            factores = ["🏠 Vive <b>dentro del campus</b>.",
+                        "👥 Tiene <b>2 o más inquilinos</b>.",
+                        "🔥 No cuenta con <b>extintor</b>."]
+        elif (inq == 0 and camp == 1 and ext == 0):
+            nivel_riesgo = "Medio"
+            factores = ["🏠 Vive <b>fuera del campus</b>.",
+                        "👤 No comparte con otros inquilinos.",
+                        "🔥 No cuenta con <b>extintor</b>."]
+        elif inq == 1 and camp == 1 and ext == 1:
+            nivel_riesgo = "Medio-alto"
+            factores = ["🏠 Vive <b>fuera del campus</b>.",
+                        "👥 Tiene <b>2 o más inquilinos</b>.",
+                        "🧯 Cuenta con <b>extintor</b>."]
+        elif (inq == 0 and camp == 1 and ext == 1):
+            nivel_riesgo = "Medio-bajo"
+            factores = ["🏠 Vive <b>fuera del campus</b>.",
+                        "👤 No comparte con otros inquilinos.",
+                        "🧯 Cuenta con <b>extintor</b>."]
+        elif (inq == 1 and camp == 0 and ext == 1):
+            nivel_riesgo = "Medio-bajo"
+            factores = ["🏠 Vive <b>fuera del campus</b>.",
+                        "👥 Tiene <b>2 o más inquilinos</b>.",
+                        "🧯 Cuenta con <b>extintor</b>."]
+        elif (inq == 0 and camp == 0 and ext == 0):
+            nivel_riesgo = "Bajo"
+            factores = ["🏠 Vive <b>dentro del campus</b>.",
+                        "👤 No comparte con otros inquilinos.",
+                        "🔥 No cuenta con <b>extintor</b>."]
+        else:
+            nivel_riesgo = "Bajo"
+            factores = ["🏠 Vive <b>dentro del campus</b>.",
+                        "👤 No comparte con otros inquilinos.",
+                        "🧯 Tiene <b>extintor</b>."]
+        
+        # ==========================================================
+        # 💵 Tabla Prima Comercial + Barra de Riesgo lado a lado
+        # ==========================================================
+        col_izq, col_der = st.columns([1, 1.1])  # más espacio a la barra
+        
+        with col_izq:
+            st.markdown(f"""
+            <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+            <thead style="background-color:#0055A4; color:white; font-weight:600;">
+            <tr>
+              <th style="padding:8px; text-align:center;">Concepto</th>
+              <th style="padding:8px; text-align:center;">%</th>
+              <th style="padding:8px; text-align:center;">Valor (USD)</th>
+            </tr>
+            </thead>
+            <tbody style="background-color:#F8FAFF; color:#002D62; font-size:1.05rem;">
+            <tr><td style="padding:6px;">Prima pura</td><td style="text-align:center;">—</td><td style="text-align:right;">{prima_pura:,.2f}</td></tr>
+            <tr><td style="padding:6px;">Gastos administrativos</td><td style="text-align:center;">{gastos}%</td><td style="text-align:right;">{prima_pura*gastos/100:,.2f}</td></tr>
+            <tr><td style="padding:6px;">Utilidad</td><td style="text-align:center;">{utilidad}%</td><td style="text-align:right;">{prima_pura*utilidad/100:,.2f}</td></tr>
+            <tr><td style="padding:6px;">Impuestos</td><td style="text-align:center;">{impuestos}%</td><td style="text-align:right;">{prima_pura*impuestos/100:,.2f}</td></tr>
+            <tr style="background-color:#E6F0FF; font-weight:800;">
+              <td style="padding:6px;">Prima comercial total</td><td style="text-align:center;">—</td>
+              <td style="text-align:right; color:#003366;">{prima_comercial:,.2f}</td>
+            </tr>
+            </tbody>
+            </table>
+            """, unsafe_allow_html=True)
+        
+        with col_der:
+            # ==========================================================
+            # 🧭 VISUALIZACIÓN DEL PERFIL DE RIESGO
+            # ==========================================================
+            niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
+            colores = ["#80CFA9", "#FFF176", "#FFD54F", "#FB8C00", "#E53935"]
+            idx = niveles.index(nivel_riesgo)
+        
+            segmentos_html = "".join([
+                f"<div class='segmento' style='background:{col}; opacity:{'1' if i==idx else '0.35'};'></div>"
+                for i, col in enumerate(colores)
+            ])
+            factores_html = "".join([f"<li>{f}</li>" for f in factores])
+        
+            html_final = f"""
+            <div class="tarjeta">
+                <h3 class="titulo">🏷️ Nivel de Riesgo: {nivel_riesgo}</h3>
+                <div class="barra-container">
+                    <div class="barra">{segmentos_html}</div>
+                    <div class="etiquetas">
+                        {''.join([f"<span>{niv}</span>" for niv in niveles])}
+                    </div>
+                    <div class="flecha" style="left: calc({idx} * 20% + 10%);"></div>
+                </div>
+                <ul class="factores">{factores_html}</ul>
+            </div>
+            <style>
+            .tarjeta {{
+                background:#F8FAFF; border-radius:16px; padding:1.2rem;
+                box-shadow:0 3px 12px rgba(0,0,0,0.15); margin-top:10px;
+                animation: fadeIn 0.9s ease-in-out;
+            }}
+            .titulo {{ color:#003366; text-align:center; font-weight:800;
+                font-size:1.4rem; margin-bottom:1rem; }}
+            .barra-container {{ position:relative; margin-bottom:1.4rem; }}
+            .barra {{ display:flex; height:24px; border-radius:6px; overflow:hidden; }}
+            .segmento {{ flex:1; transition:opacity 0.4s ease; }}
+            .etiquetas {{ display:flex; justify-content:space-between; margin-top:6px;
+                font-size:0.9rem; font-weight:600; color:#003366; }}
+            .flecha {{ position:absolute; top:24px; transform:translateX(-50%);
+                width:0; height:0; border-left:9px solid transparent;
+                border-right:9px solid transparent; border-top:12px solid #003366; }}
+            .factores {{ margin-top:12px; margin-left:20px; color:#002D62;
+                font-size:1.05rem; line-height:1.6; }}
+            </style>
+            """
+            st.markdown(html_final, unsafe_allow_html=True)
+        
+        # ====== RESUMEN FINAL COMPACTO ======
+        st.markdown(f"""
+        <div style='text-align:center; margin-top:30px; font-size:1.1rem; color:#002D62;'>
+        ✅ <b>Prima comercial total:</b> USD {prima_comercial:,.2f} |
+        🏷️ <b>Nivel de riesgo:</b> {nivel_riesgo}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        
+        
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
     
         
         
