@@ -186,14 +186,31 @@ st.set_page_config(
     layout="wide"
 )
 
-# ==== ESTILO GLOBAL: forzar fondo blanco ====
+# ==== ESTILO GLOBAL: fondo blanco y ancho controlado ====
 st.markdown("""
 <style>
-/* Fondo blanco absoluto en toda la app */
+/* Forzar fondo blanco */
 html, body, [class*="stAppViewContainer"], [class*="stApp"] {
     background-color: white !important;
     color: #002D62 !important;
 }
+
+/* Limitar ancho máximo del contenido principal */
+.main-container {
+    max-width: 1150px;  /* ajusta entre 900 y 1200 px según tu preferencia */
+    margin: 0 auto;     /* centra el contenido */
+    padding: 0 1rem;    /* pequeño margen lateral */
+}
+
+/* Color del sidebar si lo usas */
+[data-testid="stSidebar"] {
+    background-color: #F8FAFF !important;
+}
+</style>
+
+<div class="main-container">
+""", unsafe_allow_html=True)
+
 
 /* Evitar herencia de modo oscuro del dispositivo */
 [data-testid="stAppViewContainer"] {
@@ -589,6 +606,8 @@ with st.expander("🔧 Información técnica"):
         "pandas": pandas.__version__,
         "joblib": jb.__version__
     })
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 # ==== PIE DE PÁGINA ====
 st.markdown(f"""
