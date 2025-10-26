@@ -368,12 +368,15 @@ if st.session_state.get("calculada", False):
     st.metric("", f"{prima_pura:,.4f}")
 
     # ==== SLIDERS REACTIVOS ====
-    st.markdown("""
-    <h2 style='color:#002D62; font-weight:800; font-size:1.6rem; 
-    margin-top:0rem; margin-bottom:0.3rem;'>
-     💸 Cálculo de Prima Comercial (USD)
-    </h2>
-    """, unsafe_allow_html=True)
+    #st.markdown("""
+    #<h2 style='color:#002D62; font-weight:800; font-size:1.6rem; 
+    #margin-top:0rem; margin-bottom:0.3rem;'>
+    # 💸 Cálculo de Prima Comercial (USD)
+    #</h2>
+    #""", unsafe_allow_html=True)
+
+    st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>",
+                unsafe_allow_html=True)
     
     # === Sliders ===
     col1, col2, col3 = st.columns(3)
