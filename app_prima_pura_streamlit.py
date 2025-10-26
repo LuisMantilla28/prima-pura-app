@@ -193,12 +193,20 @@ def load_model_objects():
 # ==========================================
 # STREAMLIT UI
 # ==========================================
-import streamlit as st
-import pandas as pd
-from datetime import datetime
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="Estimador de Prima Pura", layout="centered")
+# --- LOGO PARA LA PESTAÑA ---
+LOGO_URL = "https://raw.githubusercontent.com/LuisMantilla28/prima-pura-app/main/losog_simple-removebg-preview.png"
+
+# *** CONFIG DE PÁGINA: título + FAVICON (logo) ***
+st.set_page_config(
+    page_title="Estimador de Prima Pura",
+    page_icon=LOGO_URL,     # <- icono de la pestaña
+    layout="centered"
+)
+
+# *** INYECTAR CSS LIGHT LO ANTES POSIBLE ***
+st.markdown(EXECUTIVE_CSS, unsafe_allow_html=True)
 
 # ==== ENCABEZADO ====
 st.markdown("""
@@ -309,7 +317,6 @@ with col2:
         dist_campus = st.number_input("📏 Distancia al campus (km)", min_value=0.0, value=1.111582, step=0.000001, format="%.6f")
     genero = st.selectbox("⚧️ Género", ["Masculino", "Femenino", "Otro", "No respuesta"], index=0)
     extintor = st.selectbox("🧯 ¿Tiene extintor?", ["No", "Sí"], index=1)
-
 
 # ==== BOTÓN DE CÁLCULO ====
 if st.button("🔢 Calcular prima pura"):
@@ -500,9 +507,6 @@ if st.session_state.get("calculada", False):
     </style>
     """
     st.markdown(html_final, unsafe_allow_html=True)
-
-
-
 
 # ==== INFO TÉCNICA ====
 with st.expander("🔧 Información técnica"):
