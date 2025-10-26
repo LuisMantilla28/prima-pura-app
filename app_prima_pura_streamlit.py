@@ -314,6 +314,7 @@ if st.button("🔢 Calcular prima pura"):
         df_pred = predecir_prima_pura_total(
             nuevo, NUM_COLS, CAT_COLS, COBERTURAS, preprocess, modelos_freq, modelos_sev
         )
+        df_pred = df_pred.round(0)
         st.session_state["df_pred"] = df_pred
         st.session_state["prima_pura_total"] = df_pred["prima_pura_total"].iloc[0]
         st.session_state["calculada"] = True
