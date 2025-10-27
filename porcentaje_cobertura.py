@@ -83,7 +83,7 @@ h3, h4 { margin: 0.2rem 0 0.6rem 0; }
 
 EXECUTIVE_CSS += """
 <style>
-/* Forzar modo claro */
+/* Forzar modo claro (se mantiene) */
 html, body, [class*="stAppViewContainer"] {
   background-color: #FFFFFF !important;
   color: #111111 !important;
@@ -91,15 +91,33 @@ html, body, [class*="stAppViewContainer"] {
 .stApp { background-color: #FFFFFF !important; color: #111111 !important; }
 div[data-testid="stMarkdown"] p { color: #111111 !important; }
 
-/* Encabezados de tablas en negro (st.dataframe y Styler) */
-[data-testid="stDataFrame"] thead th,
-[data-testid="stDataFrame"] thead th div,
-thead tr th {
+/* ===== Encabezados de tablas en NEGRO (todas) ===== */
+/* 1) DataFrame interactivo de Streamlit */
+[data-testid="stDataFrame"] div[role="columnheader"],
+[data-testid="stDataFrame"] div[role="columnheader"] * {
   color: #000000 !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+}
+
+/* 2) Tablas renderizadas como <table> (pandas Styler / HTML) */
+[data-testid="stDataFrame"] table thead th,
+[data-testid="stDataFrame"] table thead th * {
+  color: #000000 !important;
+  opacity: 1 !important;
+  font-weight: 600 !important;
+}
+
+/* 3) Por si alguna tabla se renderiza en contenedor Markdown */
+div[data-testid="stMarkdownContainer"] table thead th,
+div[data-testid="stMarkdownContainer"] table thead th * {
+  color: #000000 !important;
+  opacity: 1 !important;
   font-weight: 600 !important;
 }
 </style>
 """
+
 
 
 
