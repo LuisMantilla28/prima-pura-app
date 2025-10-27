@@ -375,7 +375,7 @@ if st.session_state.get("calculada", False):
             ])
             .applymap(lambda v: "background-color:#E6F0FF; color:#003366; font-weight:700;", subset=["Prima pura (USD)"])
             .hide(axis="index")
-            .format({"Monto máximo (USD)": "{:,.0f}", "Prima pura (USD)": "{:,.2f}"})._repr_html_(),
+            .format({"Monto máximo (USD)": "{:,.0f}", "Prima pura (USD)": "{:,.0f}"})._repr_html_(),
             unsafe_allow_html=True
         )
     with col_der:
@@ -409,7 +409,7 @@ if st.session_state.get("calculada", False):
         padding:14px; text-align:center; font-size:1.6rem;
         font-weight:800; color:#003366; box-shadow:0 2px 6px rgba(0,0,0,0.1);
     '>
-     {prima_pura:,.2f} USD
+     {prima_pura:,.0f} USD
     </div>
     """, unsafe_allow_html=True)
 
@@ -443,7 +443,7 @@ if st.session_state.get("calculada", False):
         box-shadow:0 3px 10px rgba(0,0,0,0.25);
         margin-top:10px;
     '>
-     💰 {prima_comercial:,.2f} USD
+      {prima_comercial:,.0f} USD
     </div>
     """, unsafe_allow_html=True)
 
