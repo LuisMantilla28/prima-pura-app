@@ -98,6 +98,26 @@ div[data-testid="stMarkdown"] p { color: #111111 !important; }
 }
 </style>
 """
+EXECUTIVE_CSS += """
+<style>
+/* Forzar modo claro */
+html, body, [class*="stAppViewContainer"] {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
+}
+.stApp { background-color: #FFFFFF !important; color: #111111 !important; }
+div[data-testid="stMarkdown"] p { color: #111111 !important; }
+
+/* Encabezados de tablas en negro (st.dataframe y Styler) */
+[data-testid="stDataFrame"] thead th,
+[data-testid="stDataFrame"] thead th div,
+thead tr th {
+  color: #000000 !important;
+  font-weight: 600 !important;
+}
+</style>
+"""
+
 
 # Paleta niveles
 NIVELES_RIESGO = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
