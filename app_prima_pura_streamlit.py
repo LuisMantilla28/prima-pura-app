@@ -578,7 +578,7 @@ if st.session_state.get("calculada", False):
 
         st.markdown(f"""
         <div style='text-align:center; margin-top:30px; font-size:1.1rem; color:#002D62;'>
-        ✅ <b>Prima comercial total:</b> USD {prima_comercial:,.2f} |
+        ✅ <b>Prima comercial total:</b> USD {prima_comercial:,.0f} |
         🏷️ <b>Nivel de riesgo:</b> {nivel_riesgo}
         </div>
         """, unsafe_allow_html=True)
