@@ -452,11 +452,21 @@ if st.session_state.get("calculada", False):
     with col1:
         recargo_seguridad = st.slider("Recargo de seguridad (%)", 0, 20, 5, key="recargo_seguridad")
     with col2:
-        gastos = st.slider("Gastos administrativos (%)", 0, 50, gastos, key="gastos")
+        gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
     with col3:
-        utilidad = st.slider("Utilidad (%)", 0, 30, utilidad, key="utilidad")
+        utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
     with col4:
-        impuestos = st.slider("Impuestos (%)", 0, 20, impuestos, key="impuestos")
+        impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
+
+# === Cálculo ADITIVO ===
+val_recargo   = prima_pura * recargo_seguridad/100
+val_gastos    = prima_pura * gastos/100
+val_utilidad  = prima_pura * utilidad/100
+val_impuestos = prima_pura * impuestos/100
+
+prima_comercial = prima_pura + val_recargo + val_gastos + val_utilidad + val_impuestos
+st.session_state["prima_comercial"] = prima_comercial
+
 
     
     # recalcula cuando cambien los sliders
@@ -520,29 +530,28 @@ if st.session_state.get("calculada", False):
     col_izq2, col_der2 = st.columns([1, 1.1])
     with col_izq2:
         st.markdown(f"""
-        <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+        <table style="width:100%; border-collapse:collapse; margin-top:18px;">
           <thead style="background-color:#0055A4; color:white; font-weight:600;">
             <tr>
               <th style="padding:8px; text-align:center;">Concepto</th>
-              <th style="padding:8px; text-align:center;">%</th>
+              <th style="padding:8px; text-align:center;">%</</th>
               <th style="padding:8px; text-align:center;">Valor (USD)</th>
             </tr>
           </thead>
           <tbody style="background-color:#F8FAFF; color:#002D62; font-size:1.05rem;">
             <tr><td style="padding:6px;">Prima pura</td><td style="text-align:center;">—</td><td style="text-align:right;">{prima_pura:,.0f}</td></tr>
-            <tr><td style="padding:6px;">Recargo de seguridad</td><td style="text-align:center;">{recargo_seguridad}%</td><td style="text-align:right;">{prima_pura*recargo_seguridad/100:,.0f}</td></tr>
-            <tr><td style="padding:6px;">Gastos administrativos</td><td style="text-align:center;">{gastos}%</td><td style="text-align:right;">{prima_pura*gastos/100:,.0f}</td></tr>
-            <tr><td style="padding:6px;">Utilidad</td><td style="text-align:center;">{utilidad}%</td><td style="text-align:right;">{prima_pura*utilidad/100:,.0f}</td></tr>
-            <tr><td style="padding:6px;">Impuestos</td><td style="text-align:center;">{impuestos}%</td><td style="text-align:right;">{prima_pura*impuestos/100:,.0f}</td></tr>
+            <tr><td style="padding:6px;">Recargo de seguridad</td><td style="text-align:center;">{recargo_seguridad}%</td><td style="text-align:right;">{val_recargo:,.0f}</td></tr>
+            <tr><td style="padding:6px;">Gastos administrativos</td><td style="text-align:center;">{gastos}%</td><td style="text-align:right;">{val_gastos:,.0f}</td></tr>
+            <tr><td style="padding:6px;">Utilidad</td><td style="text-align:center;">{utilidad}%</td><td style="text-align:right;">{val_utilidad:,.0f}</td></tr>
+            <tr><td style="padding:6px;">Impuestos</td><td style="text-align:center;">{impuestos}%</td><td style="text-align:right;">{val_impuestos:,.0f}</td></tr>
             <tr style="background-color:#004AAD; color:white; font-weight:900; font-size:1.1rem;">
-              <td style="padding:6px;">Prima comercial total</td>
-              <td style="text-align:center;">—</td>
+              <td style="padding:6px;">Prima comercial total</td><td style="text-align:center;">—</td>
               <td style="text-align:right;">{prima_comercial:,.0f}</td>
             </tr>
           </tbody>
         </table>
         """, unsafe_allow_html=True)
-
+        
     with col_der2:
         niveles = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
         colores = ["#80CFA9", "#FFF176", "#FFD54F", "#FB8C00", "#E53935"]
