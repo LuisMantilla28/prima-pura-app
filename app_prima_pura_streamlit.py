@@ -416,21 +416,21 @@ if st.session_state.get("calculada", False):
     st.markdown("<hr style='border: 1px solid #E6EAF0; margin: 24px 0;'>", unsafe_allow_html=True)
     #st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>", unsafe_allow_html=True)
 
+
+
+    # === Cálculo inicial (usa los valores por defecto de los sliders si no existen aún) ===
+    gastos = st.session_state.get("gastos", 20)
+    utilidad = st.session_state.get("utilidad", 10)
+    impuestos = st.session_state.get("impuestos", 5)
+    
+    factor_total = 1 + (gastos + utilidad + impuestos) / 100
+    prima_pura = st.session_state["prima_pura_total"]
+    prima_comercial = prima_pura * factor_total
+    
     # ==== MÉTRICA VISUAL DE PRIMA COMERCIAL ====
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima comercial total (USD)</h2>",
                 unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        gastos = st.slider("Gastos administrativos (%)", 0, 50, 20, key="gastos")
-    with col2:
-        utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
-    with col3:
-        impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
-
-    factor_total = 1 + (gastos + utilidad + impuestos) / 100
-    prima_comercial = prima_pura * factor_total
-
+    
     st.markdown(f"""
     <div style='
         background:linear-gradient(90deg,#004AAD,#0078D7);
@@ -443,9 +443,25 @@ if st.session_state.get("calculada", False):
         box-shadow:0 3px 10px rgba(0,0,0,0.25);
         margin-top:10px;
     '>
-      {prima_comercial:,.2f} USD
+     💰 {prima_comercial:,.2f} USD
     </div>
     """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        gastos = st.slider("Gastos administrativos (%)", 0, 50, gastos, key="gastos")
+    with col2:
+        utilidad = st.slider("Utilidad (%)", 0, 30, utilidad, key="utilidad")
+    with col3:
+        impuestos = st.slider("Impuestos (%)", 0, 20, impuestos, key="impuestos")
+    
+    # recalcula cuando cambien los sliders
+    factor_total = 1 + (gastos + utilidad + impuestos) / 100
+    prima_comercial = prima_pura * factor_total
+    st.session_state["prima_comercial"] = prima_comercial
+    
+
+
 
     inq = int(_to_int(dos_mas))
     camp = int(_to_int(en_campus))
