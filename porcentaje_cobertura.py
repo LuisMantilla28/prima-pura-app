@@ -83,23 +83,6 @@ h3, h4 { margin: 0.2rem 0 0.6rem 0; }
 
 EXECUTIVE_CSS += """
 <style>
-/* Forzar modo claro en toda la app */
-html, body, [class*="stAppViewContainer"] {
-  background-color: #FFFFFF !important;
-  color: #111111 !important;
-}
-.stApp { background-color: #FFFFFF !important; color: #111111 !important; }
-div[data-testid="stMarkdown"] p { color: #111111 !important; }
-
-/* Encabezados de tablas en negro (st.dataframe) */
-[data-testid="stDataFrame"] thead th,
-[data-testid="stDataFrame"] thead th div {
-  color: #000000 !important;
-}
-</style>
-"""
-EXECUTIVE_CSS += """
-<style>
 /* Forzar modo claro */
 html, body, [class*="stAppViewContainer"] {
   background-color: #FFFFFF !important;
@@ -117,6 +100,7 @@ thead tr th {
 }
 </style>
 """
+
 
 
 # Paleta niveles
