@@ -447,21 +447,30 @@ if st.session_state.get("calculada", False):
     </div>
     """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns(3)
+    # === Sliders para componentes de la prima comercial ===
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        gastos = st.slider("Gastos administrativos (%)", 0, 50, gastos, key="gastos")
+        recargo_seguridad = st.slider("Recargo de seguridad (%)", 0, 20, 5, key="recargo_seguridad")
     with col2:
-        utilidad = st.slider("Utilidad (%)", 0, 30, utilidad, key="utilidad")
+        gastos = st.slider("Gastos administrativos (%)", 0, 50, gastos, key="gastos")
     with col3:
+        utilidad = st.slider("Utilidad (%)", 0, 30, utilidad, key="utilidad")
+    with col4:
         impuestos = st.slider("Impuestos (%)", 0, 20, impuestos, key="impuestos")
+
     
     # recalcula cuando cambien los sliders
-    factor_total = 1 + (gastos + utilidad + impuestos) / 100
-    prima_comercial = prima_pura * factor_total
+    # === Cálculo multiplicativo de la prima comercial ===
+    prima_comercial = (
+        prima_pura
+        * (1 + recargo_seguridad / 100)
+        * (1 + gastos / 100)
+        * (1 + utilidad / 100)
+        * (1 + impuestos / 100)
+    )
     st.session_state["prima_comercial"] = prima_comercial
     
-
-
+        
 
     inq = int(_to_int(dos_mas))
     camp = int(_to_int(en_campus))
@@ -521,6 +530,7 @@ if st.session_state.get("calculada", False):
           </thead>
           <tbody style="background-color:#F8FAFF; color:#002D62; font-size:1.05rem;">
             <tr><td style="padding:6px;">Prima pura</td><td style="text-align:center;">—</td><td style="text-align:right;">{prima_pura:,.0f}</td></tr>
+            <tr><td style="padding:6px;">Recargo de seguridad</td><td style="text-align:center;">{recargo_seguridad}%</td><td style="text-align:right;">{prima_pura*recargo_seguridad/100:,.0f}</td></tr>
             <tr><td style="padding:6px;">Gastos administrativos</td><td style="text-align:center;">{gastos}%</td><td style="text-align:right;">{prima_pura*gastos/100:,.0f}</td></tr>
             <tr><td style="padding:6px;">Utilidad</td><td style="text-align:center;">{utilidad}%</td><td style="text-align:right;">{prima_pura*utilidad/100:,.0f}</td></tr>
             <tr><td style="padding:6px;">Impuestos</td><td style="text-align:center;">{impuestos}%</td><td style="text-align:right;">{prima_pura*impuestos/100:,.0f}</td></tr>
