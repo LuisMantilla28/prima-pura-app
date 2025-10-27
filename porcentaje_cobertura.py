@@ -18,7 +18,7 @@ from typing import Dict, Any, Optional
 
 import numpy as np
 import pandas as pd
-from pandas.io.formats.style import Styler  # <-- FIX: import Styler directamente
+from pandas.io.formats.style import Styler  # Importar Styler directamente
 import requests
 import streamlit as st
 from datetime import datetime
@@ -83,43 +83,15 @@ h3, h4 { margin: 0.2rem 0 0.6rem 0; }
 
 EXECUTIVE_CSS += """
 <style>
-/* Forzar modo claro (se mantiene) */
+/* Forzar modo claro */
 html, body, [class*="stAppViewContainer"] {
   background-color: #FFFFFF !important;
   color: #111111 !important;
 }
 .stApp { background-color: #FFFFFF !important; color: #111111 !important; }
 div[data-testid="stMarkdown"] p { color: #111111 !important; }
-
-/* ===== Encabezados de tablas en NEGRO (todas) ===== */
-/* 1) DataFrame interactivo de Streamlit */
-[data-testid="stDataFrame"] div[role="columnheader"],
-[data-testid="stDataFrame"] div[role="columnheader"] * {
-  color: #000000 !important;
-  opacity: 1 !important;
-  font-weight: 600 !important;
-}
-
-/* 2) Tablas renderizadas como <table> (pandas Styler / HTML) */
-[data-testid="stDataFrame"] table thead th,
-[data-testid="stDataFrame"] table thead th * {
-  color: #000000 !important;
-  opacity: 1 !important;
-  font-weight: 600 !important;
-}
-
-/* 3) Por si alguna tabla se renderiza en contenedor Markdown */
-div[data-testid="stMarkdownContainer"] table thead th,
-div[data-testid="stMarkdownContainer"] table thead th * {
-  color: #000000 !important;
-  opacity: 1 !important;
-  font-weight: 600 !important;
-}
 </style>
 """
-
-
-
 
 # Paleta niveles
 NIVELES_RIESGO = ["Bajo", "Medio-bajo", "Medio", "Medio-alto", "Alto"]
@@ -228,7 +200,7 @@ def scatter_plotly(df: pd.DataFrame, cobertura: str, sample_max: int = 8000):
             marker=dict(
                 size=sub["_size_"],
                 color=COLOR_MAP.get(nivel, "#999"),
-                line=dict(width=0.8, color="white"),  # <-- grosor del borde blanco
+                line=dict(width=0.8, color="white"),  # borde blanco
                 opacity=0.9,
             ),
             text=sub["nivel_riesgo"],
@@ -268,7 +240,7 @@ def get_fallback_data() -> Dict[str, Any]:
     cambio_por_cobertura = {
         "Gastos_Adicionales_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__genero_No respuesta","multi__año_cursado_4to año","multi__año_cursado_posgrado","multi__año_cursado_3er año","multi__estudios_area_Otro","multi__genero_Masculino","num_bin__distancia_al_campus","multi__estudios_area_Humanidades","num_bin__calif_promedio","multi__estudios_area_Ciencias","multi__año_cursado_2do año","multi__genero_Otro","num_bin__extintor_incendios"],"%Cambio_prima": [354.8370,94.7330,46.7106,42.9091,36.2409,11.1749,10.2217,1.7919,0.4819,-2.8914,-2.9553,-5.3370,-12.7520,-17.4318,-46.2605]}),
         "Gastos_Medicos_RC_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__año_cursado_posgrado","multi__año_cursado_3er año","multi__estudios_area_Humanidades","multi__genero_No respuesta","multi__año_cursado_2do año","num_bin__distancia_al_campus","multi__año_cursado_4to año","multi__genero_Otro","multi__estudios_area_Otro","num_bin__calif_promedio","multi__estudios_area_Ciencias","multi__genero_Masculino","num_bin__extintor_incendios"],"%Cambio_prima": [275.3948,187.5584,68.6651,42.8082,15.2331,10.5232,7.3051,5.3001,1.7714,0.8731,-4.1862,-7.7901,-13.3933,-18.6933,-47.4933]}),
-        "Resp_Civil_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","multi__año_cursado_posgrado","num_bin__en_campus","num_bin__distancia_al_campus","num_bin__calif_promedio","multi__estudios_area_Otro","multi__año_cursado_3er año","multi__genero_Masculino","multi__estudios_area_Ciencias","multi__año_cursado_4to año","num_bin__extintor_incendios","multi__genero_No respuesta","multi__estudios_area_Humanidades","multi__genero_Otro","num_bin__año_cursado_2do año" if False else "multi__año_cursado_2do año"],"%Cambio_prima": [448.2017,53.9895,23.9554,21.8542,10.3560,7.4916,-29.3219,-29.7620,-32.1020,-38.5175,-38.9797,-47.4722,-51.1230,-52.5578,-66.1921]}),
+        "Resp_Civil_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","multi__año_cursado_posgrado","num_bin__en_campus","num_bin__distancia_al_campus","num_bin__calif_promedio","multi__estudios_area_Otro","multi__año_cursado_3er año","multi__genero_Masculino","multi__estudios_area_Ciencias","multi__año_cursado_4to año","num_bin__extintor_incendios","multi__genero_No respuesta","multi__estudios_area_Humanidades","multi__genero_Otro","multi__año_cursado_2do año"],"%Cambio_prima": [448.2017,53.9895,23.9554,21.8542,10.3560,7.4916,-29.3219,-29.7620,-32.1020,-38.5175,-38.9797,-47.4722,-51.1230,-52.5578,-66.1921]}),
         "Contenidos_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__año_cursado_3er año","multi__año_cursado_posgrado","multi__genero_No respuesta","multi__genero_Otro","multi__genero_Masculino","multi__año_cursado_2do año","num_bin__distancia_al_campus","num_bin__calif_promedio","multi__año_cursado_4to año","multi__estudios_area_Ciencias","multi__estudios_area_Otro","multi__estudios_area_Humanidades","num_bin__extintor_incendios"],"%Cambio_prima": [345.1322,119.3666,29.8415,22.5027,18.0567,10.3456,5.1074,2.1588,-1.0780,-2.0532,-2.9586,-7.2140,-8.6788,-26.5477,-29.9581]}),
     }
 
@@ -317,7 +289,18 @@ def render_table(df: pd.DataFrame, caption: str, column_config: Dict[str, st.col
     st.caption(caption)
     st.dataframe(df, use_container_width=True, hide_index=True, column_config=column_config or {})
 
-# ---------- Tabla fija de perfiles (según tu resultado) ----------
+# === Helper para mostrar Styler con encabezados NEGROS ===
+def show_styler(sty: Styler):
+    # fuerza encabezados negros en cualquier Styler
+    sty = sty.set_table_styles([
+        {"selector": "th.col_heading", "props": [("color", "#000000"), ("font-weight", "600")]},
+        {"selector": "th.row_heading", "props": [("color", "#000000"), ("font-weight", "600")]},
+        {"selector": "th.blank",       "props": [("color", "#000000"), ("font-weight", "600")]},
+    ], overwrite=False)
+    html = sty.to_html()
+    st.markdown(html, unsafe_allow_html=True)
+
+# ---------- Tabla fija de perfiles ----------
 def get_niveles_table() -> pd.DataFrame:
     data = [
         {"nivel_riesgo":"Bajo",       "2 o más inquilinos":"No", "Ubicación":"Dentro de campus", "Extintor de incendios":"Sí",  "Prima esperada promedio":337,  "N° observaciones":2955},
@@ -332,7 +315,7 @@ def get_niveles_table() -> pd.DataFrame:
     cols = ["nivel_riesgo","2 o más inquilinos","Ubicación","Extintor de incendios","Prima esperada promedio","N° observaciones"]
     return pd.DataFrame(data, columns=cols)
 
-# ---------- Estilo por color de riesgo (misma paleta del scatter) ----------
+# ---------- Estilo por color de riesgo ----------
 def _hex_to_rgb(hex_color: str):
     hex_color = hex_color.lstrip("#")
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
@@ -341,7 +324,7 @@ def _rgba_str(hex_color: str, alpha: float = 0.3) -> str:
     r, g, b = _hex_to_rgb(hex_color)
     return f"background-color: rgba({r}, {g}, {b}, {alpha});"
 
-def style_by_risk(df: pd.DataFrame) -> Styler:  # <-- FIX: usar Styler importado
+def style_by_risk(df: pd.DataFrame) -> Styler:
     def row_style(row):
         nivel = str(row["nivel_riesgo"])
         color_hex = COLOR_MAP.get(nivel, "#e5e7eb")
@@ -354,13 +337,7 @@ def style_by_risk(df: pd.DataFrame) -> Styler:  # <-- FIX: usar Styler importado
           .format({"Prima esperada promedio": "{:,.0f}", "N° observaciones": "{:,}"})
     )
 
-    # Fuerza encabezados en negro también para Styler
-    sty = sty.set_table_styles([
-        {"selector": "th.col_heading", "props": [("color", "#000000")]},
-        {"selector": "th.row_heading", "props": [("color", "#000000")]},
-        {"selector": "th.blank",       "props": [("color", "#000000")]},
-    ], overwrite=False)
-
+    # (El color negro del header se fuerza en show_styler)
     return sty
 
 # ================================
@@ -401,11 +378,11 @@ def main():
     cambio_por_cobertura: Dict[str, pd.DataFrame] = data.get("cambio_por_cobertura", {})
     cambio_total: pd.DataFrame = data.get("cambio_total", pd.DataFrame())
 
-    # NUEVA TABLA: Perfiles de riesgo con color de fila
+    # TABLA de perfiles (con Styler -> HTML) para tener encabezados en negro
     with st.container(border=False):
         df_perf = get_niveles_table()
         styler = style_by_risk(df_perf)
-        st.dataframe(styler, use_container_width=True, hide_index=True)
+        show_styler(styler)
 
     # FILA SUPERIOR
     row1_left, row1_right = st.columns([1.2, 3.8], gap="large")
@@ -424,7 +401,6 @@ def main():
             g1, g2, g3, g4 = st.columns(4)
             with g1: kpi("Frecuencia media observada", metrics.get("Media real de N", np.nan))
             with g2: kpi("Frecuencia media  predicha", metrics.get("Media predicha de N", np.nan))
-            # <= aquí forzamos 2 decimales en severidades
             with g3: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan), nd=2)
             with g4: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan), nd=2)
 
@@ -463,6 +439,7 @@ def main():
                     df_cob = cambio_por_cobertura.get(cobertura, pd.DataFrame(columns=["Variable"])).copy()
                     if "%Cambio_prima" in df_cob.columns:
                         df_cob["Factor"] = (pd.to_numeric(df_cob["%Cambio_prima"], errors="coerce") / 100 + 1).round(4)
+
                     df_sel = df_cob[df_cob["Variable"].isin(VARS_BIN)].copy()
                     if df_sel.empty:
                         st.info("No hay datos de variables seleccionadas para esta cobertura.")
@@ -470,10 +447,11 @@ def main():
                         df_sel["Variable"] = df_sel["Variable"].replace(VAR_LABELS)
                         cols = ["Variable", "Factor"] if "Factor" in df_sel.columns else ["Variable"]
                         df_sel = df_sel[cols].sort_values("Variable").reset_index(drop=True)
-                        st.dataframe(
-                            df_sel, use_container_width=True, hide_index=True,
-                            column_config={"Factor": st.column_config.NumberColumn("Factor", format="%.4f")},
-                        )
+
+                        # === Mostrar con Styler para encabezados en negro ===
+                        sty_sel = df_sel.style.format({"Factor": "{:.4f}"} if "Factor" in df_sel.columns else {})
+                        show_styler(sty_sel)
+
                         st.markdown(
                             """
                             **¿Cómo interpretar el _Factor_?**
@@ -496,10 +474,10 @@ def main():
                     else:
                         df_total_sel = df_total_sel[["Variable", "Factor_total"]].sort_values("Variable").reset_index(drop=True)
                         df_total_sel["Variable"] = df_total_sel["Variable"].replace(VAR_LABELS)
-                        st.dataframe(
-                            df_total_sel, use_container_width=True, hide_index=True,
-                            column_config={"Factor_total": st.column_config.NumberColumn("Factor total", format="%.4f")},
-                        )
+
+                        # === Mostrar con Styler para encabezados en negro ===
+                        sty_total = df_total_sel.style.format({"Factor_total": "{:.4f}"})
+                        show_styler(sty_total)
 
         except Exception as e:
             st.error(f"Error al preparar la visualización: {e}")
