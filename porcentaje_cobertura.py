@@ -289,16 +289,33 @@ def render_table(df: pd.DataFrame, caption: str, column_config: Dict[str, st.col
     st.caption(caption)
     st.dataframe(df, use_container_width=True, hide_index=True, column_config=column_config or {})
 
-# === Helper para mostrar Styler con encabezados NEGROS ===
+# === Helper para mostrar Styler con encabezados NEGROS, sin índice y a 100% de ancho ===
 def show_styler(sty: Styler):
-    # fuerza encabezados negros en cualquier Styler
+    # 1) Ocultar la primera columna (índice)
+    try:
+        sty = sty.hide(axis="index")      # pandas >= 1.4
+    except Exception:
+        sty = sty.hide_index()            # compatibilidad con pandas más viejo
+
+    # 2) Encabezados en negro (se mantiene)
     sty = sty.set_table_styles([
         {"selector": "th.col_heading", "props": [("color", "#000000"), ("font-weight", "600")]},
         {"selector": "th.row_heading", "props": [("color", "#000000"), ("font-weight", "600")]},
         {"selector": "th.blank",       "props": [("color", "#000000"), ("font-weight", "600")]},
     ], overwrite=False)
+
+    # 3) Ancho completo de la tabla + alineación izquierda
+    sty = sty.set_table_attributes('style="width:100%; table-layout:auto"')
+    sty = sty.set_table_styles([
+        {"selector": "table", "props": [("width", "100%")]},
+        {"selector": "th",    "props": [("text-align", "left")]},
+        {"selector": "td",    "props": [("text-align", "left")]},
+    ], overwrite=False)
+
+    # Render
     html = sty.to_html()
-    st.markdown(html, unsafe_allow_html=True)
+    st.markdown(f'<div style="width:100%">{html}</div>', unsafe_allow_html=True)
+
 
 # ---------- Tabla fija de perfiles ----------
 def get_niveles_table() -> pd.DataFrame:
