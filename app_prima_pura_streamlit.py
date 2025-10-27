@@ -417,16 +417,21 @@ if st.session_state.get("calculada", False):
     #st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima Comercial (USD)</h2>", unsafe_allow_html=True)
 
 
-
-    # === Cálculo inicial (usa los valores por defecto de los sliders si no existen aún) ===
+    # === Cálculo inicial de prima comercial (valores por defecto) ===
+    recargo_seguridad = st.session_state.get("recargo_seguridad", 5)
     gastos = st.session_state.get("gastos", 20)
     utilidad = st.session_state.get("utilidad", 10)
     impuestos = st.session_state.get("impuestos", 5)
     
-    factor_total = 1 + (gastos + utilidad + impuestos) / 100
     prima_pura = st.session_state["prima_pura_total"]
-    prima_comercial = prima_pura * factor_total
-    
+    val_recargo   = prima_pura * recargo_seguridad/100
+    val_gastos    = prima_pura * gastos/100
+    val_utilidad  = prima_pura * utilidad/100
+    val_impuestos = prima_pura * impuestos/100
+
+    prima_comercial = prima_pura + val_recargo + val_gastos + val_utilidad + val_impuestos
+    st.session_state["prima_comercial"] = prima_comercial
+        
     # ==== MÉTRICA VISUAL DE PRIMA COMERCIAL ====
     st.markdown("<h2 style='color:#002D62; font-weight:800;'>💵 Prima comercial total (USD)</h2>",
                 unsafe_allow_html=True)
