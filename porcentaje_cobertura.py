@@ -90,6 +90,12 @@ html, body, [class*="stAppViewContainer"] {
 }
 .stApp { background-color: #FFFFFF !important; color: #111111 !important; }
 div[data-testid="stMarkdown"] p { color: #111111 !important; }
+
+/* Encabezados de tablas en negro (st.dataframe) */
+[data-testid="stDataFrame"] thead th,
+[data-testid="stDataFrame"] thead th div {
+  color: #000000 !important;
+}
 </style>
 """
 
@@ -240,7 +246,7 @@ def get_fallback_data() -> Dict[str, Any]:
     cambio_por_cobertura = {
         "Gastos_Adicionales_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__genero_No respuesta","multi__año_cursado_4to año","multi__año_cursado_posgrado","multi__año_cursado_3er año","multi__estudios_area_Otro","multi__genero_Masculino","num_bin__distancia_al_campus","multi__estudios_area_Humanidades","num_bin__calif_promedio","multi__estudios_area_Ciencias","multi__año_cursado_2do año","multi__genero_Otro","num_bin__extintor_incendios"],"%Cambio_prima": [354.8370,94.7330,46.7106,42.9091,36.2409,11.1749,10.2217,1.7919,0.4819,-2.8914,-2.9553,-5.3370,-12.7520,-17.4318,-46.2605]}),
         "Gastos_Medicos_RC_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__año_cursado_posgrado","multi__año_cursado_3er año","multi__estudios_area_Humanidades","multi__genero_No respuesta","multi__año_cursado_2do año","num_bin__distancia_al_campus","multi__año_cursado_4to año","multi__genero_Otro","multi__estudios_area_Otro","num_bin__calif_promedio","multi__estudios_area_Ciencias","multi__genero_Masculino","num_bin__extintor_incendios"],"%Cambio_prima": [275.3948,187.5584,68.6651,42.8082,15.2331,10.5232,7.3051,5.3001,1.7714,0.8731,-4.1862,-7.7901,-13.3933,-18.6933,-47.4933]}),
-        "Resp_Civil_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","multi__año_cursado_posgrado","num_bin__en_campus","num_bin__distancia_al_campus","num_bin__calif_promedio","multi__estudios_area_Otro","multi__año_cursado_3er año","multi__genero_Masculino","multi__estudios_area_Ciencias","multi__año_cursado_4to año","num_bin__extintor_incendios","multi__genero_No respuesta","multi__estudios_area_Humanidades","multi__genero_Otro","multi__año_cursado_2do año"],"%Cambio_prima": [448.2017,53.9895,23.9554,21.8542,10.3560,7.4916,-29.3219,-29.7620,-32.1020,-38.5175,-38.9797,-47.4722,-51.1230,-52.5578,-66.1921]}),
+        "Resp_Civil_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","multi__año_cursado_posgrado","num_bin__en_campus","num_bin__distancia_al_campus","num_bin__calif_promedio","multi__estudios_area_Otro","multi__año_cursado_3er año","multi__genero_Masculino","multi__estudios_area_Ciencias","multi__año_cursado_4to año","num_bin__extintor_incendios","multi__genero_No respuesta","multi__estudios_area_Humanidades","multi__genero_Otro","num_bin__año_cursado_2do año" if False else "multi__año_cursado_2do año"],"%Cambio_prima": [448.2017,53.9895,23.9554,21.8542,10.3560,7.4916,-29.3219,-29.7620,-32.1020,-38.5175,-38.9797,-47.4722,-51.1230,-52.5578,-66.1921]}),
         "Contenidos_siniestros_monto": pd.DataFrame({"Variable": ["num_bin__2_o_mas_inquilinos","num_bin__en_campus","multi__año_cursado_3er año","multi__año_cursado_posgrado","multi__genero_No respuesta","multi__genero_Otro","multi__genero_Masculino","multi__año_cursado_2do año","num_bin__distancia_al_campus","num_bin__calif_promedio","multi__año_cursado_4to año","multi__estudios_area_Ciencias","multi__estudios_area_Otro","multi__estudios_area_Humanidades","num_bin__extintor_incendios"],"%Cambio_prima": [345.1322,119.3666,29.8415,22.5027,18.0567,10.3456,5.1074,2.1588,-1.0780,-2.0532,-2.9586,-7.2140,-8.6788,-26.5477,-29.9581]}),
     }
 
@@ -274,12 +280,12 @@ def fmt_float(x, nd=4):
     except Exception:
         return x
 
-def kpi(label: str, value):
+def kpi(label: str, value, nd: int = 4):
     st.markdown(
         f"""
         <div class='kpi-card'>
             <div class='metric-label'>{label}</div>
-            <div class='metric-value'>{fmt_float(value)}</div>
+            <div class='metric-value'>{fmt_float(value, nd)}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -320,11 +326,20 @@ def style_by_risk(df: pd.DataFrame) -> Styler:  # <-- FIX: usar Styler importado
         bg = _rgba_str(color_hex, alpha=0.5)
         return [bg] * len(row)
 
-    return (
+    sty = (
         df.style
           .apply(row_style, axis=1)
           .format({"Prima esperada promedio": "{:,.0f}", "N° observaciones": "{:,}"})
     )
+
+    # Fuerza encabezados en negro también para Styler
+    sty = sty.set_table_styles([
+        {"selector": "th.col_heading", "props": [("color", "#000000")]},
+        {"selector": "th.row_heading", "props": [("color", "#000000")]},
+        {"selector": "th.blank",       "props": [("color", "#000000")]},
+    ], overwrite=False)
+
+    return sty
 
 # ================================
 # APP
@@ -337,7 +352,6 @@ def main():
     )
     st.markdown(EXECUTIVE_CSS, unsafe_allow_html=True)
 
-    # Header
     # Header
     top_logo, top_title = st.columns([1, 6])
     with top_logo:
@@ -357,7 +371,6 @@ def main():
             unsafe_allow_html=True
         )
 
-
     # Datos
     mod = load_remote_module(REMOTE_PY_URL, REMOTE_MODULE_NAME)
     data = try_remote_get_metrics(mod) or get_fallback_data()
@@ -366,7 +379,6 @@ def main():
     cambio_por_cobertura: Dict[str, pd.DataFrame] = data.get("cambio_por_cobertura", {})
     cambio_total: pd.DataFrame = data.get("cambio_total", pd.DataFrame())
 
-    
     # NUEVA TABLA: Perfiles de riesgo con color de fila
     with st.container(border=False):
         df_perf = get_niveles_table()
@@ -389,10 +401,10 @@ def main():
             metrics = header_metrics.get(cobertura, {})
             g1, g2, g3, g4 = st.columns(4)
             with g1: kpi("Frecuencia media observada", metrics.get("Media real de N", np.nan))
-            with g2: kpi("Frecuencia media  predicha", metrics.get("Media predicha de N", np.nan))
-            with g3: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan))
-            with g4: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan))
-            
+            with g2: kpi("Frecuencia media  predicha", metrics.get("Media predicha de N", np.nan))
+            # <= aquí forzamos 2 decimales en severidades
+            with g3: kpi("Severidad real media (observada)", metrics.get("Severidad real media (observada)", np.nan), nd=2)
+            with g4: kpi("Severidad esperada media (predicha)", metrics.get("Severidad esperada media (predicha)", np.nan), nd=2)
 
     # Excel
     try:
@@ -450,11 +462,9 @@ def main():
                             """
                         )
 
-            
-
             # FILA INFERIOR: TABLA total (sin %Cambio_total)
             with st.container(border=True):
-                st.markdown("### Factores de riesgo prima esperada total")
+                st.markdown("### Factores de riesgo prima esperada total")
                 if cambio_total is None or cambio_total.empty:
                     st.info("No hay datos de cambio total disponibles.")
                 else:
