@@ -527,7 +527,7 @@ if st.session_state.get("calculada", False):
             <tr style="background-color:#004AAD; color:white; font-weight:900; font-size:1.1rem;">
               <td style="padding:6px;">Prima comercial total</td>
               <td style="text-align:center;">—</td>
-              <td style="text-align:right;">{prima_comercial:,.2f}</td>
+              <td style="text-align:right;">{prima_comercial:,.0f}</td>
             </tr>
           </tbody>
         </table>
