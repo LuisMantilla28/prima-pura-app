@@ -457,30 +457,17 @@ if st.session_state.get("calculada", False):
         utilidad = st.slider("Utilidad (%)", 0, 30, 10, key="utilidad")
     with col4:
         impuestos = st.slider("Impuestos (%)", 0, 20, 5, key="impuestos")
-
-# === Cálculo ADITIVO ===
-val_recargo   = prima_pura * recargo_seguridad/100
-val_gastos    = prima_pura * gastos/100
-val_utilidad  = prima_pura * utilidad/100
-val_impuestos = prima_pura * impuestos/100
-
-prima_comercial = prima_pura + val_recargo + val_gastos + val_utilidad + val_impuestos
-st.session_state["prima_comercial"] = prima_comercial
-
-
     
-    # recalcula cuando cambien los sliders
-    # === Cálculo multiplicativo de la prima comercial ===
-    prima_comercial = (
-        prima_pura
-        * (1 + recargo_seguridad / 100)
-        * (1 + gastos / 100)
-        * (1 + utilidad / 100)
-        * (1 + impuestos / 100)
-    )
+    # === Cálculo ADITIVO ===
+    val_recargo   = prima_pura * recargo_seguridad/100
+    val_gastos    = prima_pura * gastos/100
+    val_utilidad  = prima_pura * utilidad/100
+    val_impuestos = prima_pura * impuestos/100
+    
+    prima_comercial = prima_pura + val_recargo + val_gastos + val_utilidad + val_impuestos
     st.session_state["prima_comercial"] = prima_comercial
-    
         
+            
 
     inq = int(_to_int(dos_mas))
     camp = int(_to_int(en_campus))
