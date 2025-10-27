@@ -520,10 +520,10 @@ if st.session_state.get("calculada", False):
             </tr>
           </thead>
           <tbody style="background-color:#F8FAFF; color:#002D62; font-size:1.05rem;">
-            <tr><td style="padding:6px;">Prima pura</td><td style="text-align:center;">—</td><td style="text-align:right;">{prima_pura:,.2f}</td></tr>
-            <tr><td style="padding:6px;">Gastos administrativos</td><td style="text-align:center;">{gastos}%</td><td style="text-align:right;">{prima_pura*gastos/100:,.2f}</td></tr>
-            <tr><td style="padding:6px;">Utilidad</td><td style="text-align:center;">{utilidad}%</td><td style="text-align:right;">{prima_pura*utilidad/100:,.2f}</td></tr>
-            <tr><td style="padding:6px;">Impuestos</td><td style="text-align:center;">{impuestos}%</td><td style="text-align:right;">{prima_pura*impuestos/100:,.2f}</td></tr>
+            <tr><td style="padding:6px;">Prima pura</td><td style="text-align:center;">—</td><td style="text-align:right;">{prima_pura:,.0f}</td></tr>
+            <tr><td style="padding:6px;">Gastos administrativos</td><td style="text-align:center;">{gastos}%</td><td style="text-align:right;">{prima_pura*gastos/100:,.0f}</td></tr>
+            <tr><td style="padding:6px;">Utilidad</td><td style="text-align:center;">{utilidad}%</td><td style="text-align:right;">{prima_pura*utilidad/100:,.0f}</td></tr>
+            <tr><td style="padding:6px;">Impuestos</td><td style="text-align:center;">{impuestos}%</td><td style="text-align:right;">{prima_pura*impuestos/100:,.0f}</td></tr>
             <tr style="background-color:#004AAD; color:white; font-weight:900; font-size:1.1rem;">
               <td style="padding:6px;">Prima comercial total</td>
               <td style="text-align:center;">—</td>
